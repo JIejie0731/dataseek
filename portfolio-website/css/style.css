@@ -1,0 +1,867 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100vh;
+    background-color: #f5f7fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 导航栏样式 */
+header {
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+}
+
+nav ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 1rem;
+}
+
+nav ul li {
+    margin: 0 1rem;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: all 0.3s;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+nav ul li a:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+/* 添加导航栏激活状态样式 */
+nav ul li a.active {
+    color: #fff;
+    background-color: #007bff;
+}
+
+nav ul li a.active:hover {
+    background-color: #0056b3;
+}
+
+/* 主要内容区域 */
+main {
+    flex: 1;
+    margin-top: 80px;
+    padding: 2rem;
+}
+
+/* 建设中提示样式 */
+.construction-notice {
+    text-align: center;
+    padding: 2rem;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.construction-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+/* 欢迎区域样式 */
+.welcome-section {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.welcome-content {
+    margin-top: 2rem;
+    text-align: left;
+}
+
+.feature-list {
+    list-style: none;
+    margin: 1rem 0;
+    padding: 0;
+}
+
+.feature-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.feature-list li:last-child {
+    border-bottom: none;
+}
+
+/* 即将上线区域样式 */
+.coming-soon {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.coming-soon h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.coming-soon-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.coming-soon-item {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+.coming-soon-item:hover {
+    transform: translateY(-5px);
+}
+
+.coming-soon-item h3 {
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+/* 项目卡片样式 */
+.project-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 1rem;
+    transition: transform 0.3s;
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+}
+
+.project-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.project-card h3 {
+    margin: 1rem 0;
+}
+
+.project-link {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.project-link:hover {
+    background-color: #0056b3;
+}
+
+/* 关于我页面样式 */
+.about-section {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-content {
+    margin-top: 2rem;
+}
+
+.skills-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.skills-list li {
+    background-color: #f8f9fa;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+/* 联系页面样式 */
+.contact-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.contact-info ul {
+    list-style: none;
+    margin: 1rem 0;
+}
+
+.contact-info li {
+    margin: 0.5rem 0;
+}
+
+.social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.social-link {
+    text-decoration: none;
+    color: #007bff;
+    transition: color 0.3s;
+}
+
+.social-link:hover {
+    color: #0056b3;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    height: 150px;
+    resize: vertical;
+}
+
+.submit-btn {
+    background-color: #007bff;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-btn:hover {
+    background-color: #0056b3;
+}
+
+/* 页脚样式 */
+footer {
+    background-color: #2c3e50;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+footer p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* SQL查询页面样式 */
+.sql-section {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 登录表单样式 */
+.login-form {
+    max-width: 400px;
+    margin: 100px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.login-form h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.login-form p {
+    text-align: center;
+    color: #7f8c8d;
+    margin-bottom: 30px;
+}
+
+.password-input {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.password-input input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.password-input input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none;
+    font-size: 20px;
+    color: #7f8c8d;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: #3498db;
+}
+
+.login-form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-form button:hover {
+    background-color: #2980b9;
+}
+
+/* SQL编辑器样式 */
+.sql-interface {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    padding: 20px;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
+.sql-editor, .query-results {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.editor-header, .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.editor-header h3, .results-header h3 {
+    color: #2c3e50;
+    font-size: 18px;
+    margin: 0;
+}
+
+.editor-actions, .results-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 8px 15px;
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background-color: #e9ecef;
+    border-color: #d0d0d0;
+}
+
+.db-config-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+}
+
+.db-config-btn:hover {
+    background-color: #2980b9;
+}
+
+.db-config-btn.connected {
+    background-color: #2ecc71;
+}
+
+.db-config-btn.connected:hover {
+    background-color: #27ae60;
+}
+
+#sqlQuery {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    resize: none;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    height: calc(100vh - 250px);
+    min-height: calc(100vh - 250px);
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+#sqlQuery:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.submit-btn, .export-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.submit-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #2980b9;
+}
+
+.export-btn {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.export-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.export-btn:hover:not(:disabled) {
+    background-color: #27ae60;
+}
+
+.results-table {
+    flex: 1;
+    overflow: auto;
+    background-color: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    height: calc(100vh - 250px);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 数据库配置面板样式 */
+.db-config-panel {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 2px solid #e0e0e0;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-group input {
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.connect-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.connect-btn:hover {
+    background-color: #27ae60;
+}
+
+/* 错误信息显示区域样式 */
+.error-message {
+    background-color: white;
+    margin: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+}
+
+.error-header {
+    background-color: #f8f9fa;
+    padding: 12px 20px;
+    border-bottom: 2px solid #f0f0f0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.error-header h3 {
+    color: #2c3e50;
+    font-size: 16px;
+    margin: 0;
+}
+
+.error-header h3::before {
+    content: '⚠️';
+    margin-right: 8px;
+}
+
+.error-content {
+    padding: 12px 20px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #e74c3c;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-y: auto;
+    background-color: #fff5f5;
+    flex: 1;
+    border-radius: 0 0 12px 12px;
+    transition: all 0.3s ease;
+}
+
+.error-content.success {
+    color: #27ae60;
+    background-color: #f0fff4;
+}
+
+/* 错误信息抖动动画 */
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.error-shake {
+    animation: errorShake 0.5s ease-in-out;
+}
+
+/* 滚动条样式 */
+.error-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.error-content::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 0 0 12px 0;
+}
+
+.error-content::-webkit-scrollbar-thumb {
+    background: #e0e0e0;
+    border-radius: 4px;
+}
+
+.error-content::-webkit-scrollbar-thumb:hover {
+    background: #d0d0d0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    nav ul li {
+        margin: 0.5rem 0;
+    }
+    
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .contact-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .homework-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .visualization-examples {
+        grid-template-columns: 1fr;
+    }
+    
+    .coming-soon-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .preview-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .preview-item {
+        padding: 1.5rem;
+    }
+    
+    main {
+        padding: 1rem;
+    }
+    
+    footer {
+        padding: 10px 0;
+    }
+    
+    .sql-interface {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 80px);
+    }
+    
+    #sqlQuery {
+        height: calc(50vh - 150px);
+        min-height: calc(50vh - 150px);
+        max-height: calc(50vh - 150px);
+    }
+    
+    .results-table {
+        height: calc(50vh - 150px);
+    }
+    
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .login-form {
+        margin: 50px 20px;
+        padding: 30px;
+    }
+    
+    .error-message {
+        margin: 10px;
+        height: 120px;
+    }
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.test-btn {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.test-btn:hover {
+    background-color: #357abd;
+}
+
+.test-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.test-btn.testing {
+    background-color: #f0ad4e;
+    cursor: wait;
+}
+
+.test-btn.success {
+    background-color: #5cb85c;
+}
+
+.test-btn.error {
+    background-color: #d9534f;
+}
+
+.sql-error-box {
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.error-box-header {
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.error-box-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 14px;
+}
+
+.error-box-content {
+    padding: 12px;
+    min-height: 60px;
+    max-height: 150px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #d9534f;
+    background-color: #fff;
+}
+
+.error-box-content:empty::before {
+    content: '暂无错误信息';
+    color: #999;
+    font-style: italic;
+}
+
+.form-group .password-input {
+    position: relative;
+    width: 100%;
+}
+
+.form-group .password-input input {
+    width: 100%;
+    padding-right: 40px;
+}
+
+.form-group .toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none;
+    font-size: 16px;
+    color: #666;
+    transition: color 0.3s;
+}
+
+.form-group .toggle-password:hover {
+    color: #333;
+} 

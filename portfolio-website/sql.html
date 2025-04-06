@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL查询 - 我的作品集</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">首页</a></li>
+                <li><a href="sql.html" class="active">SQL查询</a></li>
+                <li><a href="visualization.html">可视化案例</a></li>
+                <li><a href="dashboard.html">数据大屏</a></li>
+                <li><a href="homework.html">作业分发平台</a></li>
+                <li><a href="contact.html">联系我</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="sql-section">
+            <div id="loginForm" class="login-form">
+                <h2>SQL查询登录</h2>
+                <p>请输入密码以访问SQL查询功能</p>
+                <form id="passwordForm">
+                    <div class="password-input">
+                        <input type="password" id="password" placeholder="请输入密码" required>
+                        <span class="toggle-password" id="togglePassword">👁️</span>
+                    </div>
+                    <button type="button" id="loginButton">登录</button>
+                </form>
+            </div>
+
+            <div id="sqlContent" class="sql-content" style="display: none;">
+                <div class="sql-interface">
+                    <div class="sql-editor">
+                        <div class="editor-header">
+                            <h3>SQL编辑器</h3>
+                            <div class="editor-actions">
+                                <button id="toggleDbConfig" class="action-btn db-config-btn">数据库配置</button>
+                                <button id="formatSql" class="action-btn">格式化</button>
+                                <button id="clearSql" class="action-btn">清空</button>
+                            </div>
+                        </div>
+                        <div id="dbConfigPanel" class="db-config-panel" style="display: none;">
+                            <form id="dbConnectForm">
+                                <div class="config-grid">
+                                    <div class="form-group">
+                                        <label for="dbHost">主机地址</label>
+                                        <input type="text" id="dbHost" value="localhost" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dbPort">端口</label>
+                                        <input type="number" id="dbPort" value="3306" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dbUser">用户名</label>
+                                        <input type="text" id="dbUser" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dbPassword">密码</label>
+                                        <div class="password-input">
+                                            <input type="password" id="dbPassword" required>
+                                            <span class="toggle-password" id="toggleDbPassword">👁️</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dbName">数据库名</label>
+                                        <input type="text" id="dbName" required>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="test-btn" id="testConnection">测试连接</button>
+                                    <button type="submit" class="connect-btn">连接数据库</button>
+                                </div>
+                            </form>
+                        </div>
+                        <textarea id="sqlQuery" placeholder="输入您的SQL查询语句..."></textarea>
+                        <div class="sql-error-box">
+                            <div class="error-box-header">
+                                <h4>SQL错误信息</h4>
+                            </div>
+                            <div class="error-box-content" id="sqlErrorContent">
+                                <!-- SQL错误信息将在这里显示 -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="query-results">
+                        <div class="results-header">
+                            <h3>查询结果</h3>
+                            <div class="results-actions">
+                                <button class="submit-btn" id="executeQuery">执行查询</button>
+                                <button class="export-btn" id="exportResults" disabled>导出结果</button>
+                            </div>
+                        </div>
+                        <div class="results-table">
+                            <table id="resultsTable">
+                                <!-- 查询结果将在这里显示 -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="error-message">
+                    <div class="error-header">
+                        <h3>错误信息</h3>
+                    </div>
+                    <div class="error-content" id="errorContent">
+                        <!-- 错误信息将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/sql.js"></script>
+</body>
+</html> 
