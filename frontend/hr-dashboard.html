@@ -1,0 +1,2776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人力资源分析大屏 - 数据求索</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <!-- 引入导出Excel所需的库 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        main {
+            padding-top: 60px; /* 与导航栏高度一致，确保内容不被导航栏遮挡 */
+        }
+        
+        .hr-dashboard-container {
+            padding: 20px 30px;
+        }
+        
+        /* 面包屑导航样式 */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        .breadcrumb a:hover {
+            color: var(--primary-color);
+        }
+        
+        .breadcrumb i {
+            font-size: 10px;
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+        
+        .breadcrumb span {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        /* 筛选器样式 */
+        .filter-bar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--card-border);
+        }
+        
+        .filter-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-right: 10px;
+            color: var(--text-color);
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filter-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.8);
+            color: var(--text-color);
+            min-width: 160px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 30px;
+        }
+        
+        #department-level-2 {
+            min-width: 180px;
+        }
+        
+        .filter-btn {
+            margin-left: auto;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .filter-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* 卡片容器 */
+        .hr-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        /* 卡片样式 */
+        .hr-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--card-border);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-height: 260px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            will-change: transform, width, height, left, top;
+            transform: translate3d(0, 0, 0);
+            overflow: hidden; /* 防止内容溢出 */
+        }
+        
+        .hr-card.expanded {
+            position: fixed !important;
+            top: 10vh !important;
+            left: 10vw !important;
+            width: 80vw !important;
+            height: 80vh !important;
+            z-index: 1000 !important;
+            transform: translate3d(0, 0, 0) !important;
+        }
+        
+        .card-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: transparent;
+            z-index: 999;
+            display: none;
+            transition: background-color 0.3s ease;
+        }
+        
+        .hr-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .hr-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+        
+        .hr-card-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 5px 0 0;
+        }
+        
+        .hr-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .hr-card-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 160px;
+            overflow: hidden; /* 防止内容溢出 */
+            position: relative; /* 增加定位上下文 */
+        }
+        
+        .hr-card-placeholder {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* 图表和图形占位符 */
+        .chart-placeholder {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        /* 数据指标样式 */
+        .metric-value {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.2;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .metric-change {
+            font-size: 14px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .metric-change.positive {
+            color: #34c759;
+        }
+        
+        .metric-change.negative {
+            color: #ff3b30;
+        }
+        
+        /* 部门树形图卡片样式 */
+        .tree-chart {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tree-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .tree-node-main {
+            width: 100px;
+            height: 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .tree-node-main::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            width: 2px;
+            height: 15px;
+            background-color: var(--text-secondary);
+            opacity: 0.3;
+        }
+        
+        .tree-node-children {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .tree-node-child {
+            width: 80px;
+            height: 35px;
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            position: relative;
+        }
+        
+        .tree-node-child::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            width: 2px;
+            height: 10px;
+            background-color: var(--text-secondary);
+            opacity: 0.3;
+        }
+        
+        /* 人员画像样式 */
+        .profile-chart {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+        
+        .profile-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .profile-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgba(59, 130, 246, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .profile-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .profile-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        /* 暗色模式适配 */
+        body.dark-mode .filter-select {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .chart-placeholder {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* 用户头像样式 */
+        .user-profile {
+            position: relative;
+            margin-left: 0; /* 移除左边距，由.navbar-right的gap控制 */
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: var(--primary-dark);
+        }
+        
+        .user-avatar:active {
+            transform: scale(0.95);
+            background-color: var(--primary-dark);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .user-menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 200px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 0;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .user-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .user-menu-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        
+        .user-menu-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .user-menu-header p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .user-menu-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .user-menu-item {
+            padding: 0;
+        }
+        
+        .user-menu-item a {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .user-menu-item a:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+            color: var(--primary-color);
+        }
+        
+        .user-menu-item i {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+        
+        .user-menu-divider {
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.05);
+            margin: 5px 0;
+        }
+        
+        body.dark-mode .user-menu {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .user-menu-header {
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .user-menu-item a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        body.dark-mode .user-menu-divider {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 导航栏主题切换按钮 */
+        .navbar-theme-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+            margin-left: 20px;
+        }
+        
+        .navbar-theme-switcher:hover {
+            transform: scale(1.05);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .navbar-theme-switcher i {
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        body.dark-mode .navbar-theme-switcher:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* 修改.navbar-right的样式使其元素有更好的间距 */
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 20px; /* 增加元素之间的间距 */
+        }
+        
+        /* 修改卡片中的放大按钮样式 */
+        .card-expand-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .card-expand-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.05);
+        }
+        
+        /* 自定义图表样式 */
+        .chart-container {
+            width: 100%;
+            height: 100%;
+            min-height: 160px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+            opacity: 1;
+        }
+        
+        /* 卡片加载状态 */
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .loading-indicator i {
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 明细弹框样式 */
+        .detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .detail-modal.active {
+            opacity: 1;
+            display: flex;
+        }
+        
+        .detail-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            width: 85%;
+            max-width: 1200px;
+            max-height: 85vh;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--card-border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(20px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .detail-modal.active .detail-content {
+            transform: translateY(0);
+        }
+        
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .detail-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .detail-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .detail-close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .detail-body {
+            flex: 1;
+            overflow: auto;
+            padding-right: 5px;
+        }
+        
+        /* 表格样式 */
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .detail-table thead {
+            position: sticky;
+            top: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1;
+        }
+        
+        .detail-table th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-color);
+            border-bottom: 1px solid var(--card-border);
+            white-space: nowrap;
+        }
+        
+        .detail-table td {
+            padding: 10px 15px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .detail-table tr:hover td {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .detail-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* 表格分页 */
+        .table-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0 5px;
+            margin-top: 10px;
+            border-top: 1px solid var(--card-border);
+        }
+        
+        .table-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .table-pagination {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-color);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .page-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .page-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 加载指示器 */
+        .detail-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+        }
+        
+        .detail-loading i {
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+        
+        .detail-count {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 13px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: 10px;
+        }
+        
+        /* 暗色模式适配 */
+        body.dark-mode .detail-close {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .detail-close:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        body.dark-mode .detail-table td {
+            border-bottom-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        body.dark-mode .detail-table tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        body.dark-mode .page-btn {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .page-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* 导出按钮样式 */
+        .export-btn {
+            padding: 8px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .export-btn:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.02);
+        }
+        
+        .export-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 暗色模式适配 */
+        body.dark-mode .export-btn {
+            background-color: var(--primary-color);
+        }
+        
+        body.dark-mode .export-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* 卡片标题可点击样式 */
+        .clickable-title {
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .clickable-title:hover {
+            color: var(--primary-color);
+        }
+        
+        .clickable-title::after {
+            content: '\f0c9';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            font-size: 12px;
+            margin-left: 6px;
+            opacity: 0.5;
+        }
+        
+        .clickable-title:hover::after {
+            opacity: 1;
+        }
+        
+        /* 选项卡弹窗样式 */
+        .tabs-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .tabs-modal.active {
+            opacity: 1;
+            display: flex;
+        }
+        
+        .tabs-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1300px;
+            height: 700px;
+            max-height: 700px;
+            padding: 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--card-border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(20px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .tabs-modal.active .tabs-content {
+            transform: translateY(0);
+        }
+        
+        .tabs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .tabs-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+        
+        .tabs-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .tabs-close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .tabs-navigation {
+            display: flex;
+            border-bottom: 1px solid var(--card-border);
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .tab-button {
+            padding: 14px 25px;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+            background: transparent;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+        
+        .tab-button:hover {
+            color: var(--text-color);
+        }
+        
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .tab-content {
+            padding: 30px;
+            overflow-y: auto;
+            height: 540px;
+            max-height: 540px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-placeholder {
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .tab-placeholder i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.2;
+        }
+        
+        /* 暗色模式适配 */
+        body.dark-mode .tabs-navigation {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        body.dark-mode .tabs-close {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .tabs-close:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+    <!-- 添加统一的主题管理脚本 -->
+    <script>
+        // 初始化主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户是否已登录
+            checkUserLogin();
+            
+            // 初始化主题
+            initTheme();
+            
+            // 初始化用户菜单
+            const userAvatar = document.getElementById('userAvatar');
+            const userMenu = document.getElementById('userMenu');
+            
+            userAvatar.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userMenu.classList.toggle('active');
+            });
+            
+            // 点击页面其他地方关闭用户菜单
+            document.addEventListener('click', function() {
+                userMenu.classList.remove('active');
+            });
+            
+            // 防止点击菜单内部时关闭菜单
+            userMenu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // 退出登录
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                });
+            }
+            
+            // 主题切换
+            const themeSwitcher = document.getElementById('themeSwitcher');
+            if (themeSwitcher) {
+                themeSwitcher.addEventListener('click', function() {
+                    toggleTheme();
+                });
+            }
+            
+            // 初始化部门筛选联动
+            initDepartmentFilters();
+            
+            // 初始化卡片放大功能
+            initCardExpand();
+            
+            // 加载第一个卡片数据，默认选"全部"
+            loadEntryYearData('all', 'all');
+            
+            // 初始化卡片标题点击事件
+            initCardTitleClick();
+        });
+        
+        // 检查用户登录状态
+        function checkUserLogin() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || !user.isLoggedIn) {
+                // 未登录，重定向到登录页面
+                window.location.href = 'login.html';
+            } else {
+                // 已登录，更新用户信息
+                updateUserInfo(user);
+            }
+        }
+        
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('dark-mode');
+            if (savedTheme === 'true') {
+                document.body.classList.add('dark-mode');
+                updateThemeIcon(true);
+            } else {
+                document.body.classList.remove('dark-mode');
+                updateThemeIcon(false);
+            }
+        }
+        
+        // 切换主题
+        function toggleTheme() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('dark-mode', isDarkMode);
+            updateThemeIcon(isDarkMode);
+        }
+        
+        // 更新主题图标
+        function updateThemeIcon(isDarkMode) {
+            const themeIcon = document.querySelector('#themeSwitcher i');
+            if (themeIcon) {
+                if (isDarkMode) {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+            }
+        }
+        
+        // 存储全局筛选条件
+        let currentPrimaryDept = 'all';
+        let currentSecondaryDept = 'all';
+        
+        // 初始化部门筛选联动
+        function initDepartmentFilters() {
+            const level1Select = document.getElementById('department-level-1');
+            const level2Select = document.getElementById('department-level-2');
+            
+            // 从API获取部门数据
+            fetch('/api/hr/departments/distinct')
+                .then(response => response.json())
+                .then(data => {
+                    // 清空现有选项
+                    level1Select.innerHTML = '';
+                    
+                    // 添加"全部"选项
+                    const allOption = document.createElement('option');
+                    allOption.value = 'all';
+                    allOption.textContent = '一级部门';
+                    level1Select.appendChild(allOption);
+                    
+                    // 添加一级部门选项
+                    data.primary_departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept;
+                        option.textContent = dept;
+                        level1Select.appendChild(option);
+                    });
+                    
+                    // 存储二级部门数据供后续使用
+                    window.secondaryDepartments = data.secondary_departments;
+                    
+                    // 初始化二级部门下拉框
+                    updateSecondaryDepartments('all');
+                })
+                .catch(error => {
+                    console.error('获取部门数据失败:', error);
+                });
+            
+            // 一级部门变化时更新二级部门
+            level1Select.addEventListener('change', function() {
+                const selectedDepartment = this.value;
+                updateSecondaryDepartments(selectedDepartment);
+            });
+            
+            // 二级部门变化时应用筛选
+            level2Select.addEventListener('change', function() {
+                applyFilter();
+            });
+            
+            // 更新二级部门下拉框
+            function updateSecondaryDepartments(primaryDept) {
+                // 清空现有选项
+                level2Select.innerHTML = '';
+                
+                // 添加"全部"选项
+                const allOption = document.createElement('option');
+                allOption.value = 'all';
+                allOption.textContent = '二级部门';
+                level2Select.appendChild(allOption);
+                
+                // 如果选择了特定的一级部门，筛选相关的二级部门
+                if (primaryDept !== 'all' && window.secondaryDepartments) {
+                    // 获取员工数据以找出与一级部门相关的二级部门
+                    fetch(`/api/hr/employees`)
+                        .then(response => response.json())
+                        .then(employees => {
+                            // 筛选出与所选一级部门相关的二级部门
+                            const relatedSecondaryDepts = [];
+                            employees.forEach(emp => {
+                                if (emp.primary_department === primaryDept && 
+                                    emp.secondary_department && 
+                                    !relatedSecondaryDepts.includes(emp.secondary_department)) {
+                                    relatedSecondaryDepts.push(emp.secondary_department);
+                                }
+                            });
+                            
+                            // 添加相关二级部门选项
+                            relatedSecondaryDepts.sort().forEach(dept => {
+                                const option = document.createElement('option');
+                                option.value = dept;
+                                option.textContent = dept;
+                                level2Select.appendChild(option);
+                            });
+                            
+                            // 应用筛选
+                            applyFilter();
+                        })
+                        .catch(error => {
+                            console.error('获取员工数据失败:', error);
+                        });
+                } else if (window.secondaryDepartments) {
+                    // 如果选择"全部"，显示所有二级部门
+                    window.secondaryDepartments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept;
+                        option.textContent = dept;
+                        level2Select.appendChild(option);
+                    });
+                    
+                    // 应用筛选
+                    applyFilter();
+                }
+            }
+        }
+        
+        // 应用筛选函数
+        function applyFilter() {
+            currentPrimaryDept = document.getElementById('department-level-1').value;
+            currentSecondaryDept = document.getElementById('department-level-2').value;
+            
+            console.log(`筛选条件：一级部门=${currentPrimaryDept}，二级部门=${currentSecondaryDept}`);
+            
+            // 根据筛选条件更新各个卡片数据
+            loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+            // 这里可以添加其他图表的加载函数
+            
+            // 如果标题弹窗已打开，则刷新其中的数据
+            const tabsModal = document.getElementById('entry-year-tabs-modal');
+            if (tabsModal.classList.contains('active')) {
+                // 获取当前激活的选项卡
+                const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+                
+                if (activeTab === 'department-tab') {
+                    loadEntryYearByDept(currentPrimaryDept, currentSecondaryDept);
+                } else if (activeTab === 'position-tab') {
+                    // 后续实现岗位维度数据加载
+                }
+            }
+        }
+        
+        // 更新用户信息
+        function updateUserInfo(user) {
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            const userRole = document.getElementById('userRole');
+            
+            if (user.username) {
+                if (userName) {
+                    userName.textContent = user.username;
+                }
+                // 如果有用户头像但没有图片，则显示用户名首字母
+                if (userAvatar && !userAvatar.querySelector('img')) {
+                    const span = document.createElement('span');
+                    span.textContent = user.username.charAt(0).toUpperCase();
+                    userAvatar.innerHTML = '';
+                    userAvatar.appendChild(span);
+                }
+            }
+            
+            if (user.role && userRole) {
+                userRole.textContent = user.role;
+            }
+        }
+        
+        // 初始化卡片放大功能
+        function initCardExpand() {
+            // 获取所有卡片放大按钮
+            const expandButtons = document.querySelectorAll('.card-expand-btn');
+            const overlay = document.getElementById('card-overlay');
+            
+            // 为每个放大按钮添加点击事件
+            expandButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    // 获取当前卡片
+                    const card = this.closest('.hr-card');
+                    const cardId = card.id;
+                    
+                    // 检查卡片是否已经放大
+                    if (card.classList.contains('expanded')) {
+                        // 特殊处理：对含有ECharts的卡片，先固定图表尺寸
+                        const chartContainer = card.querySelector('.chart-container');
+                        if (chartContainer) {
+                            // 已在图表渲染函数中处理
+                            chartContainer.style.position = 'absolute';
+                        }
+                        
+                        // 缩小卡片
+                        card.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                        card.classList.remove('expanded');
+                        
+                        // 优化遮罩层淡出效果
+                        overlay.style.backgroundColor = 'transparent';
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            // 恢复图表容器的定位
+                            if (chartContainer) {
+                                chartContainer.style.position = 'relative';
+                            }
+                        }, 300);
+                        
+                        this.innerHTML = '<i class="fas fa-expand-arrows-alt"></i>';
+                        
+                        // 启用滚动
+                        document.body.style.overflow = 'auto';
+                    } else {
+                        // 先重置所有已放大的卡片
+                        document.querySelectorAll('.hr-card.expanded').forEach(expandedCard => {
+                            const chartContainer = expandedCard.querySelector('.chart-container');
+                            if (chartContainer) {
+                                chartContainer.style.opacity = '0';
+                                chartContainer.style.position = 'absolute';
+                            }
+                            expandedCard.classList.remove('expanded');
+                            expandedCard.querySelector('.card-expand-btn').innerHTML = '<i class="fas fa-expand-arrows-alt"></i>';
+                            
+                            // 延迟恢复图表容器的定位
+                            setTimeout(() => {
+                                if (chartContainer) {
+                                    chartContainer.style.position = 'relative';
+                                }
+                            }, 300);
+                        });
+                        
+                        // 先显示遮罩层
+                        overlay.style.display = 'block';
+                        // 使用淡入效果
+                        setTimeout(() => {
+                            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                        }, 10);
+                        
+                        // 放大当前卡片
+                        card.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                        card.classList.add('expanded');
+                        this.innerHTML = '<i class="fas fa-compress-arrows-alt"></i>';
+                        
+                        // 卡片放大后再显示图表
+                        const chartContainer = card.querySelector('.chart-container');
+                        if (chartContainer) {
+                            setTimeout(() => {
+                                chartContainer.style.opacity = '1';
+                            }, 300);
+                        }
+                        
+                        // 禁用滚动
+                        document.body.style.overflow = 'hidden';
+                    }
+                    
+                    // 阻止事件冒泡
+                    return false;
+                });
+            });
+            
+            // 点击遮罩层关闭放大的卡片
+            overlay.addEventListener('click', function() {
+                const expandedCard = document.querySelector('.hr-card.expanded');
+                if (expandedCard) {
+                    // 特殊处理：对含有ECharts的卡片，先固定图表尺寸
+                    const chartContainer = expandedCard.querySelector('.chart-container');
+                    if (chartContainer) {
+                        chartContainer.style.opacity = '0';
+                        chartContainer.style.position = 'absolute';
+                    }
+                    
+                    expandedCard.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                    expandedCard.classList.remove('expanded');
+                    expandedCard.querySelector('.card-expand-btn').innerHTML = '<i class="fas fa-expand-arrows-alt"></i>';
+                    
+                    // 优化遮罩层淡出效果
+                    overlay.style.backgroundColor = 'transparent';
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        // 恢复图表容器的定位
+                        if (chartContainer) {
+                            chartContainer.style.position = 'relative';
+                        }
+                    }, 300);
+                    
+                    // 启用滚动
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        }
+        
+        // 加载员工入职年份数据
+        function loadEntryYearData(primaryDept, secondaryDept) {
+            // 显示加载指示器
+            document.getElementById('card-1-loading').style.display = 'flex';
+            document.getElementById('entry-year-chart').style.display = 'none';
+            
+            // 构建API请求URL
+            const url = `/api/hr/statistics/entry-year?primary_department=${primaryDept}&secondary_department=${secondaryDept}`;
+            
+            // 获取数据
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏加载指示器
+                    document.getElementById('card-1-loading').style.display = 'none';
+                    document.getElementById('entry-year-chart').style.display = 'block';
+                    
+                    // 绘制图表
+                    renderEntryYearChart(data);
+                })
+                .catch(error => {
+                    console.error('获取员工入职年份数据失败:', error);
+                    // 显示错误信息
+                    document.getElementById('card-1-loading').innerHTML = 
+                        '<i class="fas fa-exclamation-circle"></i> 加载数据失败，请刷新重试';
+                });
+        }
+        
+        // 绘制员工入职年份图表
+        function renderEntryYearChart(data) {
+            const chartDom = document.getElementById('entry-year-chart');
+            const chart = echarts.init(chartDom, null, {
+                renderer: 'canvas', // 使用canvas渲染器可能会更流畅
+                devicePixelRatio: window.devicePixelRatio // 适配高分辨率屏幕
+            });
+            
+            // 准备数据
+            const years = data.year_data.map(item => item.year);
+            const counts = data.year_data.map(item => item.count);
+            
+            // 图表配置
+            const option = {
+                animation: false, // 禁用动画以提高性能
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: '{b}年: {c}人'
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: years,
+                    axisLabel: {
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '人数'
+                },
+                series: [
+                    {
+                        name: '入职人数',
+                        type: 'bar',
+                        data: counts,
+                        itemStyle: {
+                            color: function(params) {
+                                // 根据数据值生成不同深浅的颜色
+                                const colorList = [
+                                    '#83bff6', '#188df0', '#0c66dc', '#005bbf', '#00419c', '#00287e'
+                                ];
+                                const value = params.value;
+                                const max = Math.max(...counts);
+                                const level = Math.floor((value / max) * (colorList.length - 1));
+                                return colorList[level >= 0 ? level : 0];
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: '{c}'
+                        }
+                    }
+                ]
+            };
+            
+            // 设置图表
+            chart.setOption(option);
+            
+            // 添加点击事件，显示明细数据
+            chart.on('click', function(params) {
+                const year = params.name; // 获取点击的年份
+                const count = params.value; // 获取数量
+                
+                // 设置标题
+                document.getElementById('detail-title').textContent = `${year}年入职员工明细`;
+                document.getElementById('detail-count').textContent = count;
+                
+                // 显示弹框
+                const modal = document.getElementById('detail-modal');
+                modal.classList.add('active');
+                
+                // 显示加载状态，隐藏表格
+                document.getElementById('detail-loading').style.display = 'flex';
+                document.getElementById('detail-table').style.display = 'none';
+                document.getElementById('table-footer').style.display = 'none';
+                
+                // 获取明细数据 - 使用全局筛选条件
+                fetchEmployeesByYear(year, currentPrimaryDept, currentSecondaryDept);
+            });
+            
+            // 存储图表实例到window对象，方便后续访问
+            window.card1Chart = chart;
+            
+            // 监听窗口大小变化，调整图表大小
+            window.addEventListener('resize', function() {
+                if (window.card1Chart) {
+                    window.card1Chart.resize();
+                }
+            });
+            
+            // 添加卡片展开/缩小事件的图表重绘
+            const expandBtn = document.querySelector('#card-1 .card-expand-btn');
+            if (expandBtn) {
+                expandBtn.addEventListener('click', function() {
+                    // 获取当前卡片
+                    const card = this.closest('.hr-card');
+                    
+                    if (card.classList.contains('expanded')) {
+                        // 卡片要缩小前，先固定图表尺寸防止撑开卡片
+                        const currentWidth = chartDom.offsetWidth;
+                        const currentHeight = chartDom.offsetHeight;
+                        
+                        // 先固定图表尺寸
+                        chartDom.style.width = currentWidth + 'px';
+                        chartDom.style.height = currentHeight + 'px';
+                        chartDom.style.opacity = '0';
+                        
+                        // 缩小后恢复自适应尺寸
+                        setTimeout(() => {
+                            chartDom.style.width = '100%';
+                            chartDom.style.height = '100%';
+                            
+                            // 重新初始化图表以适应新尺寸
+                            if (window.card1Chart) {
+                                window.card1Chart.dispose();
+                                window.card1Chart = echarts.init(chartDom, null, {
+                                    renderer: 'canvas',
+                                    devicePixelRatio: window.devicePixelRatio
+                                });
+                                window.card1Chart.setOption(option);
+                                chartDom.style.opacity = '1';
+                                
+                                // 重新绑定点击事件
+                                window.card1Chart.on('click', function(params) {
+                                    const year = params.name;
+                                    const count = params.value;
+                                    
+                                    document.getElementById('detail-title').textContent = `${year}年入职员工明细`;
+                                    document.getElementById('detail-count').textContent = count;
+                                    
+                                    const modal = document.getElementById('detail-modal');
+                                    modal.classList.add('active');
+                                    
+                                    document.getElementById('detail-loading').style.display = 'flex';
+                                    document.getElementById('detail-table').style.display = 'none';
+                                    document.getElementById('table-footer').style.display = 'none';
+                                    
+                                    // 使用全局筛选条件
+                                    fetchEmployeesByYear(year, currentPrimaryDept, currentSecondaryDept);
+                                });
+                            }
+                        }, 300);
+                    } else {
+                        // 卡片展开时，等待过渡完成后再重绘图表
+                        setTimeout(() => {
+                            if (window.card1Chart) {
+                                window.card1Chart.resize();
+                                chartDom.style.opacity = '1';
+                            }
+                        }, 300);
+                    }
+                });
+            }
+        }
+        
+        // 获取特定年份入职的员工明细
+        function fetchEmployeesByYear(year, primaryDept, secondaryDept) {
+            // 构建API请求URL
+            const url = `/api/hr/employees/by-year?year=${year}&primary_department=${primaryDept}&secondary_department=${secondaryDept}`;
+            
+            // 存储当前明细数据，用于导出
+            window.currentDetailData = null;
+            
+            // 获取数据
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏加载指示器
+                    document.getElementById('detail-loading').style.display = 'none';
+                    
+                    // 存储当前明细数据，用于导出
+                    window.currentDetailData = data;
+                    
+                    if (data.count > 0) {
+                        // 显示表格和分页
+                        document.getElementById('detail-table').style.display = 'table';
+                        document.getElementById('table-footer').style.display = 'flex';
+                        
+                        // 渲染表格数据
+                        renderDetailTable(data);
+                    } else {
+                        // 显示无数据提示
+                        document.getElementById('detail-body').innerHTML = `
+                            <div style="text-align: center; padding: 50px 0; color: var(--text-secondary);">
+                                <i class="fas fa-info-circle" style="font-size: 48px; opacity: 0.5; margin-bottom: 20px;"></i>
+                                <p>没有找到${year}年的入职员工数据</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取员工明细数据失败:', error);
+                    // 显示错误信息
+                    document.getElementById('detail-loading').innerHTML = 
+                        '<i class="fas fa-exclamation-circle"></i> 加载数据失败，请刷新重试';
+                });
+        }
+        
+        // 渲染明细表格数据
+        function renderDetailTable(data) {
+            const tableBody = document.getElementById('detail-table-body');
+            const tableInfo = document.getElementById('table-info');
+            const pagination = document.getElementById('table-pagination');
+            
+            // 清空表格内容
+            tableBody.innerHTML = '';
+            
+            // 每页显示的数量
+            const pageSize = 10;
+            const totalPages = Math.ceil(data.count / pageSize);
+            
+            // 分页状态
+            let currentPage = 1;
+            let paginatedData = [];
+            
+            // 如果需要分页
+            if (data.count > pageSize) {
+                // 根据当前页获取显示的数据
+                paginatedData = data.data.slice(0, pageSize);
+                
+                // 生成分页按钮
+                generatePagination(data.data, totalPages, pageSize);
+            } else {
+                // 不需要分页，显示所有数据
+                paginatedData = data.data;
+                tableInfo.textContent = `显示 1-${data.count} 条，共 ${data.count} 条`;
+                pagination.innerHTML = '';
+            }
+            
+            // 渲染表格数据
+            paginatedData.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // 按表头顺序添加单元格
+                row.innerHTML = `
+                    <td>${item['姓名']}</td>
+                    <td>${item['一级部门']}</td>
+                    <td>${item['二级部门']}</td>
+                    <td>${item['职位']}</td>
+                    <td>${item['入职日期']}</td>
+                    <td>${item['薪资']}</td>
+                    <td>${item['绩效']}</td>
+                    <td>${item['状态']}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // 生成分页按钮
+            function generatePagination(allData, totalPages, pageSize) {
+                pagination.innerHTML = '';
+                
+                // 上一页按钮
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'page-btn' + (currentPage === 1 ? ' disabled' : '');
+                prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        goToPage(currentPage - 1);
+                    }
+                });
+                pagination.appendChild(prevBtn);
+                
+                // 页码按钮
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', () => {
+                        goToPage(i);
+                    });
+                    pagination.appendChild(pageBtn);
+                }
+                
+                // 下一页按钮
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'page-btn' + (currentPage === totalPages ? ' disabled' : '');
+                nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        goToPage(currentPage + 1);
+                    }
+                });
+                pagination.appendChild(nextBtn);
+                
+                // 更新表格信息
+                const start = (currentPage - 1) * pageSize + 1;
+                const end = Math.min(currentPage * pageSize, data.count);
+                tableInfo.textContent = `显示 ${start}-${end} 条，共 ${data.count} 条`;
+            }
+            
+            // 跳转到指定页
+            function goToPage(page) {
+                currentPage = page;
+                
+                // 计算当前页的数据
+                const start = (page - 1) * pageSize;
+                const end = Math.min(page * pageSize, data.count);
+                paginatedData = data.data.slice(start, end);
+                
+                // 清空表格
+                tableBody.innerHTML = '';
+                
+                // 重新渲染表格数据
+                paginatedData.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item['姓名']}</td>
+                        <td>${item['一级部门']}</td>
+                        <td>${item['二级部门']}</td>
+                        <td>${item['职位']}</td>
+                        <td>${item['入职日期']}</td>
+                        <td>${item['薪资']}</td>
+                        <td>${item['绩效']}</td>
+                        <td>${item['状态']}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // 更新分页按钮
+                generatePagination(data.data, totalPages, pageSize);
+            }
+        }
+        
+        // 初始化明细弹框关闭按钮
+        document.addEventListener('DOMContentLoaded', function() {
+            const detailClose = document.getElementById('detail-close');
+            const detailModal = document.getElementById('detail-modal');
+            
+            // 关闭按钮点击事件
+            if (detailClose) {
+                detailClose.addEventListener('click', function() {
+                    detailModal.classList.remove('active');
+                });
+            }
+            
+            // 点击弹框外部关闭
+            detailModal.addEventListener('click', function(e) {
+                if (e.target === detailModal) {
+                    detailModal.classList.remove('active');
+                }
+            });
+            
+            // 阻止点击内容区域时冒泡关闭
+            const detailContent = detailModal.querySelector('.detail-content');
+            if (detailContent) {
+                detailContent.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+            
+            // 导出Excel按钮点击事件
+            const exportBtn = document.getElementById('export-excel-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
+                    exportToExcel();
+                });
+            }
+        });
+        
+        // 导出Excel函数
+        function exportToExcel() {
+            // 检查是否有数据可以导出
+            if (!window.currentDetailData || !window.currentDetailData.data || window.currentDetailData.data.length === 0) {
+                alert('没有可导出的数据');
+                return;
+            }
+            
+            try {
+                // 获取标题
+                const title = document.getElementById('detail-title').textContent;
+                
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                
+                // 创建工作表数据
+                const wsData = [
+                    ['姓名', '一级部门', '二级部门', '职位', '入职日期', '薪资', '绩效', '状态'] // 表头
+                ];
+                
+                // 添加数据行
+                window.currentDetailData.data.forEach(item => {
+                    wsData.push([
+                        item['姓名'],
+                        item['一级部门'],
+                        item['二级部门'],
+                        item['职位'],
+                        item['入职日期'],
+                        item['薪资'],
+                        item['绩效'],
+                        item['状态']
+                    ]);
+                });
+                
+                // 创建工作表
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // 设置列宽
+                const wscols = [
+                    {wch: 10}, // 姓名
+                    {wch: 15}, // 一级部门
+                    {wch: 15}, // 二级部门
+                    {wch: 20}, // 职位
+                    {wch: 15}, // 入职日期
+                    {wch: 10}, // 薪资
+                    {wch: 8},  // 绩效
+                    {wch: 8}   // 状态
+                ];
+                ws['!cols'] = wscols;
+                
+                // 添加工作表到工作簿
+                XLSX.utils.book_append_sheet(wb, ws, "员工明细");
+                
+                // 导出文件名
+                const fileName = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                
+                // 导出Excel文件
+                XLSX.writeFile(wb, fileName);
+                
+                console.log('导出成功:', fileName);
+            } catch (error) {
+                console.error('导出Excel失败:', error);
+                alert('导出失败: ' + error.message);
+            }
+        }
+        
+        // 初始化卡片标题点击事件
+        function initCardTitleClick() {
+            // 为员工入职年份卡片标题添加可点击样式和事件
+            const entryYearTitle = document.querySelector('#card-1 .hr-card-title');
+            entryYearTitle.classList.add('clickable-title');
+            
+            // 添加点击事件
+            entryYearTitle.addEventListener('click', function() {
+                // 显示选项卡弹窗
+                const tabsModal = document.getElementById('entry-year-tabs-modal');
+                tabsModal.classList.add('active');
+                
+                // 默认选中第一个选项卡
+                showTab('department-tab');
+                
+                // 加载部门维度数据 - 使用当前筛选条件
+                loadEntryYearByDept(currentPrimaryDept, currentSecondaryDept);
+            });
+            
+            // 初始化选项卡关闭按钮
+            const tabsClose = document.getElementById('tabs-close');
+            const tabsModal = document.getElementById('entry-year-tabs-modal');
+            
+            tabsClose.addEventListener('click', function() {
+                tabsModal.classList.remove('active');
+            });
+            
+            // 点击弹框外部关闭
+            tabsModal.addEventListener('click', function(e) {
+                if (e.target === tabsModal) {
+                    tabsModal.classList.remove('active');
+                }
+            });
+            
+            // 阻止点击内容区域时冒泡关闭
+            const tabsContent = tabsModal.querySelector('.tabs-content');
+            tabsContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // 选项卡切换事件
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    showTab(tabId);
+                    
+                    // 根据选项卡加载不同数据
+                    if (tabId === 'department-tab') {
+                        loadEntryYearByDept(currentPrimaryDept, currentSecondaryDept);
+                    } else if (tabId === 'position-tab') {
+                        // 后续实现岗位维度数据加载
+                        // 暂时保留占位内容
+                    }
+                });
+            });
+        }
+        
+        // 加载部门维度下的入职年份数据
+        function loadEntryYearByDept(primaryDept = 'all', secondaryDept = 'all') {
+            const deptTab = document.getElementById('department-tab');
+            
+            // 显示加载中
+            deptTab.innerHTML = `
+                <div class="loading-indicator">
+                    <i class="fas fa-spinner"></i> 正在加载数据...
+                </div>
+            `;
+            
+            // 构建查询字符串
+            const queryParams = new URLSearchParams({
+                primary_department: primaryDept,
+                secondary_department: secondaryDept
+            });
+            
+            // 调用API获取数据
+            fetch(`/api/hr/statistics/entry-year-by-dept?${queryParams.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.data && data.data.length > 0) {
+                        renderDeptEntryYearTable(data, primaryDept, secondaryDept);
+                    } else {
+                        deptTab.innerHTML = `
+                            <div class="tab-placeholder">
+                                <i class="fas fa-info-circle"></i>
+                                <p>当前筛选条件下暂无部门维度数据</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取部门入职数据失败:', error);
+                    deptTab.innerHTML = `
+                        <div class="tab-placeholder">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>数据加载失败</p>
+                            <p>请刷新重试</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // 渲染部门入职年份表格
+        function renderDeptEntryYearTable(data, primaryDept, secondaryDept) {
+            const deptTab = document.getElementById('department-tab');
+            
+            // 构建筛选器状态描述
+            let filterDescription = '';
+            if (primaryDept !== 'all' && secondaryDept !== 'all') {
+                filterDescription = `（筛选：${primaryDept} - ${secondaryDept}）`;
+            } else if (primaryDept !== 'all') {
+                filterDescription = `（筛选：${primaryDept}）`;
+            } else if (secondaryDept !== 'all') {
+                filterDescription = `（筛选：${secondaryDept}）`;
+            }
+            
+            // 构建表格HTML
+            let tableHtml = `
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="d-flex justify-between align-center">
+                            <div>
+                                <h3>2020年至今各部门入职人数统计 ${filterDescription}</h3>
+                                <p>共计 ${data.total_count} 人</p>
+                            </div>
+                            <button class="export-btn" id="dept-export-btn">
+                                <i class="fas fa-file-excel"></i> 导出Excel
+                            </button>
+                        </div>
+                    </div>
+                    <table class="dept-table">
+                        <thead>
+                            <tr>
+                                <th>部门名称</th>
+                                <th>入职人数</th>
+                                <th>占比</th>
+                                <th>数据可视化</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // 添加表格行
+            data.data.forEach((item, index) => {
+                tableHtml += `
+                    <tr class="primary-dept-row" data-dept="${item.department}">
+                        <td>
+                            <div class="dept-name">
+                                <i class="fas fa-caret-right dept-toggle-icon"></i>
+                                ${item.department}
+                            </div>
+                        </td>
+                        <td>${item.count}</td>
+                        <td>${item.percentage}%</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: ${item.percentage}%;"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="subdept-container" id="subdept-${index}" style="display: none;">
+                        <td colspan="4" class="p-0">
+                            <div class="subdept-loading">
+                                <i class="fas fa-circle-notch fa-spin"></i> 加载中...
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // 完成表格
+            tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // 渲染表格
+            deptTab.innerHTML = tableHtml;
+            
+            // 添加点击事件
+            const deptRows = deptTab.querySelectorAll('.primary-dept-row');
+            deptRows.forEach((row, index) => {
+                row.addEventListener('click', function() {
+                    const deptName = this.getAttribute('data-dept');
+                    const subDeptRow = document.getElementById(`subdept-${index}`);
+                    const toggleIcon = this.querySelector('.dept-toggle-icon');
+                    
+                    // 切换展开/折叠状态
+                    if (subDeptRow.style.display === 'none') {
+                        // 关闭其他已打开的行
+                        document.querySelectorAll('.subdept-container').forEach(r => {
+                            if (r.id !== `subdept-${index}`) {
+                                r.style.display = 'none';
+                                const otherIcon = document.querySelector(`.primary-dept-row[data-dept="${r.previousElementSibling.getAttribute('data-dept')}"] .dept-toggle-icon`);
+                                if (otherIcon) otherIcon.classList.remove('fa-caret-down');
+                                if (otherIcon) otherIcon.classList.add('fa-caret-right');
+                            }
+                        });
+                        
+                        // 展开当前行并加载数据
+                        subDeptRow.style.display = 'table-row';
+                        toggleIcon.classList.remove('fa-caret-right');
+                        toggleIcon.classList.add('fa-caret-down');
+                        
+                        // 加载二级部门数据 - 传递当前二级部门筛选条件
+                        loadSubDeptData(deptName, index, secondaryDept);
+                    } else {
+                        // 折叠当前行
+                        subDeptRow.style.display = 'none';
+                        toggleIcon.classList.remove('fa-caret-down');
+                        toggleIcon.classList.add('fa-caret-right');
+                    }
+                });
+            });
+            
+            // 添加导出Excel功能
+            const exportBtn = document.getElementById('dept-export-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
+                    exportDeptDataToExcel(data, primaryDept, secondaryDept);
+                });
+            }
+            
+            // 添加表格样式
+            const style = document.createElement('style');
+            style.textContent = `
+                .table-container {
+                    width: 100%;
+                    overflow: auto;
+                }
+                
+                .table-header {
+                    margin-bottom: 20px;
+                }
+                
+                .table-header h3 {
+                    font-size: 18px;
+                    margin: 0 0 5px 0;
+                    color: var(--text-color);
+                }
+                
+                .table-header p {
+                    font-size: 14px;
+                    margin: 0;
+                    color: var(--text-secondary);
+                }
+                
+                .d-flex {
+                    display: flex;
+                }
+                
+                .justify-between {
+                    justify-content: space-between;
+                }
+                
+                .align-center {
+                    align-items: center;
+                }
+                
+                .dept-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 14px;
+                }
+                
+                .dept-table th {
+                    padding: 12px 15px;
+                    text-align: left;
+                    font-weight: 600;
+                    color: var(--text-color);
+                    border-bottom: 1px solid var(--card-border);
+                    background-color: rgba(0, 0, 0, 0.02);
+                }
+                
+                .dept-table td {
+                    padding: 12px 15px;
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                }
+                
+                .dept-table tr:last-child td {
+                    border-bottom: none;
+                }
+                
+                .primary-dept-row {
+                    cursor: pointer;
+                    transition: background-color 0.2s ease;
+                }
+                
+                .primary-dept-row:hover td {
+                    background-color: rgba(0, 0, 0, 0.03);
+                }
+                
+                .dept-name {
+                    display: flex;
+                    align-items: center;
+                    font-weight: 500;
+                }
+                
+                .dept-toggle-icon {
+                    margin-right: 8px;
+                    width: 14px;
+                    transition: transform 0.2s ease;
+                    color: var(--text-secondary);
+                }
+                
+                .dept-toggle-icon.fa-caret-down {
+                    transform: rotate(0deg);
+                }
+                
+                .progress-bar {
+                    height: 8px;
+                    background-color: rgba(0, 0, 0, 0.05);
+                    border-radius: 4px;
+                    overflow: hidden;
+                    width: 100%;
+                }
+                
+                .progress {
+                    height: 100%;
+                    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+                    border-radius: 4px;
+                }
+                
+                .p-0 {
+                    padding: 0 !important;
+                }
+                
+                .subdept-loading {
+                    padding: 15px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--text-secondary);
+                    font-size: 14px;
+                    background-color: rgba(0, 0, 0, 0.01);
+                }
+                
+                .subdept-loading i {
+                    margin-right: 8px;
+                }
+                
+                .subdept-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                
+                .subdept-table td {
+                    padding: 10px 15px;
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+                    background-color: rgba(0, 0, 0, 0.01);
+                    font-size: 13px;
+                }
+                
+                .subdept-table tr:last-child td {
+                    border-bottom: none;
+                }
+                
+                .indent {
+                    margin-left: 22px;
+                }
+                
+                .subdept-row {
+                    color: var(--text-secondary);
+                }
+                
+                .subdept-name {
+                    display: flex;
+                    align-items: center;
+                }
+                
+                .subdept-icon {
+                    margin-right: 8px;
+                    color: var(--text-secondary);
+                    opacity: 0.6;
+                    font-size: 12px;
+                }
+                
+                .subdept-container {
+                    transition: all 0.3s ease;
+                }
+                
+                .subdept-error {
+                    padding: 15px;
+                    text-align: center;
+                    color: #ff6b6b;
+                    background-color: rgba(255, 107, 107, 0.05);
+                    font-size: 14px;
+                }
+                
+                .subdept-empty {
+                    padding: 15px;
+                    text-align: center;
+                    color: var(--text-secondary);
+                    background-color: rgba(0, 0, 0, 0.01);
+                    font-size: 14px;
+                    font-style: italic;
+                }
+                
+                body.dark-mode .dept-table th {
+                    background-color: rgba(255, 255, 255, 0.02);
+                }
+                
+                body.dark-mode .dept-table td {
+                    border-bottom-color: rgba(255, 255, 255, 0.05);
+                }
+                
+                body.dark-mode .primary-dept-row:hover td {
+                    background-color: rgba(255, 255, 255, 0.03);
+                }
+                
+                body.dark-mode .progress-bar {
+                    background-color: rgba(255, 255, 255, 0.05);
+                }
+                
+                body.dark-mode .subdept-table td {
+                    border-bottom-color: rgba(255, 255, 255, 0.03);
+                    background-color: rgba(255, 255, 255, 0.01);
+                }
+                
+                body.dark-mode .subdept-loading, 
+                body.dark-mode .subdept-empty {
+                    background-color: rgba(255, 255, 255, 0.01);
+                }
+                
+                body.dark-mode .subdept-error {
+                    background-color: rgba(255, 107, 107, 0.05);
+                }
+            `;
+            
+            document.head.appendChild(style);
+        }
+        
+        // 导出部门维度数据到Excel
+        function exportDeptDataToExcel(data, primaryDept, secondaryDept) {
+            try {
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                
+                // 创建主表工作表数据
+                const mainData = [
+                    ['部门层级', '部门名称', '入职人数', '占比']
+                ];
+                
+                // 添加一级部门数据并异步加载二级部门数据
+                const loadPromises = [];
+                
+                data.data.forEach(item => {
+                    // 添加一级部门行
+                    mainData.push([
+                        '一级部门',
+                        item.department,
+                        item.count,
+                        item.percentage + '%'
+                    ]);
+                    
+                    // 创建加载二级部门数据的Promise
+                    const loadPromise = new Promise((resolve, reject) => {
+                        // 构建查询参数
+                        const queryParams = new URLSearchParams({
+                            primary_dept: item.department,
+                            secondary_department: secondaryDept
+                        });
+                        
+                        fetch(`/api/hr/statistics/entry-year-by-subdept?${queryParams.toString()}`)
+                            .then(response => response.json())
+                            .then(subData => {
+                                if (subData.data && subData.data.length > 0) {
+                                    // 为每个二级部门添加数据行
+                                    subData.data.forEach(subItem => {
+                                        mainData.push([
+                                            '二级部门',
+                                            `└─ ${subItem.department}`,
+                                            subItem.count,
+                                            subItem.percentage + '%'
+                                        ]);
+                                    });
+                                }
+                                resolve();
+                            })
+                            .catch(err => {
+                                console.error(`获取${item.department}的二级部门数据失败:`, err);
+                                resolve(); // 即使失败也继续处理
+                            });
+                    });
+                    
+                    loadPromises.push(loadPromise);
+                });
+                
+                // 构建筛选器状态描述
+                let filterDescription = '';
+                if (primaryDept !== 'all' && secondaryDept !== 'all') {
+                    filterDescription = `_${primaryDept}_${secondaryDept}`;
+                } else if (primaryDept !== 'all') {
+                    filterDescription = `_${primaryDept}`;
+                } else if (secondaryDept !== 'all') {
+                    filterDescription = `_${secondaryDept}`;
+                }
+                
+                // 等待所有二级部门数据加载完成后导出Excel
+                Promise.all(loadPromises).then(() => {
+                    // 创建工作表
+                    const ws = XLSX.utils.aoa_to_sheet(mainData);
+                    
+                    // 设置列宽
+                    const wscols = [
+                        {wch: 10}, // 部门层级
+                        {wch: 30}, // 部门名称
+                        {wch: 10}, // 入职人数
+                        {wch: 10}  // 占比
+                    ];
+                    ws['!cols'] = wscols;
+                    
+                    // 添加工作表到工作簿
+                    XLSX.utils.book_append_sheet(wb, ws, "部门入职统计");
+                    
+                    // 导出文件名
+                    const fileName = `部门入职人数统计${filterDescription}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                    
+                    // 导出Excel文件
+                    XLSX.writeFile(wb, fileName);
+                    
+                    console.log('导出部门数据成功:', fileName);
+                });
+            } catch (error) {
+                console.error('导出Excel失败:', error);
+                alert('导出失败: ' + error.message);
+            }
+        }
+        
+        // 加载子部门数据
+        function loadSubDeptData(primaryDept, rowIndex, secondaryDept = 'all') {
+            const container = document.getElementById(`subdept-${rowIndex}`);
+            
+            // 构建查询参数
+            const queryParams = new URLSearchParams({
+                primary_dept: primaryDept,
+                secondary_department: secondaryDept
+            });
+            
+            // 调用API获取二级部门数据
+            fetch(`/api/hr/statistics/entry-year-by-subdept?${queryParams.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 存储数据到DOM元素中，方便导出时获取
+                    container.dataset.subdeptData = JSON.stringify(data);
+                    
+                    if (data.data && data.data.length > 0) {
+                        // 构建二级部门表格
+                        let tableHtml = `
+                            <table class="subdept-table">
+                                <tbody>
+                        `;
+                        
+                        // 添加二级部门行
+                        data.data.forEach(item => {
+                            tableHtml += `
+                                <tr class="subdept-row">
+                                    <td class="indent">
+                                        <div class="subdept-name">
+                                            <i class="fas fa-level-down-alt subdept-icon"></i>
+                                            ${item.department}
+                                        </div>
+                                    </td>
+                                    <td>${item.count}</td>
+                                    <td>${item.percentage}%</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress" style="width: ${item.percentage}%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        tableHtml += `
+                                </tbody>
+                            </table>
+                        `;
+                        
+                        container.querySelector('td').innerHTML = tableHtml;
+                    } else {
+                        // 显示无数据提示
+                        container.querySelector('td').innerHTML = `
+                            <div class="subdept-empty">
+                                该部门下没有二级部门数据
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取二级部门数据失败:', error);
+                    // 显示错误提示
+                    container.querySelector('td').innerHTML = `
+                        <div class="subdept-error">
+                            <i class="fas fa-exclamation-circle"></i> 获取二级部门数据失败
+                        </div>
+                    `;
+                });
+        }
+        
+        // 添加额外样式
+        const additionalStyles = `
+            .subdept-footer {
+                display: none;
+            }
+            
+            .export-subdept-btn {
+                display: none;
+            }
+        `;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const style = document.createElement('style');
+            style.textContent = additionalStyles;
+            document.head.appendChild(style);
+        });
+        
+        // 显示选项卡内容
+        function showTab(tabId) {
+            // 移除所有选项卡的活动状态
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 激活选中的选项卡
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="index.html" class="logo">
+                <img src="assets/logo-light.svg" alt="数据求索" class="logo-light">
+                <img src="assets/logo-dark.svg" alt="数据求索" class="logo-dark">
+            </a>
+        </div>
+        <div class="navbar-menu">
+            <a href="index.html" class="nav-item">首页</a>
+            <a href="dashboard.html" class="nav-item">数据大屏</a>
+        </div>
+        <div class="navbar-right">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatar">
+                    <span id="userInitials">A</span>
+                </div>
+                <div class="user-menu" id="userMenu">
+                    <div class="user-menu-header">
+                        <h4 id="userName">用户名</h4>
+                        <p id="userRole">角色</p>
+                    </div>
+                    <ul class="user-menu-items">
+                        <li class="user-menu-item">
+                            <a href="#">
+                                <i class="fas fa-user"></i>
+                                个人资料
+                            </a>
+                        </li>
+                        <li class="user-menu-item">
+                            <a href="#">
+                                <i class="fas fa-cog"></i>
+                                账户设置
+                            </a>
+                        </li>
+                        <li class="user-menu-item">
+                            <a href="#">
+                                <i class="fas fa-bell"></i>
+                                通知中心
+                            </a>
+                        </li>
+                        <div class="user-menu-divider"></div>
+                        <li class="user-menu-item">
+                            <a href="#" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                退出登录
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="navbar-theme-switcher" id="themeSwitcher">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="hr-dashboard-container">
+            <!-- 筛选器 -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <select class="filter-select" id="department-level-1">
+                        <option value="all">一级部门</option>
+                        <!-- 选项将通过API获取后动态填充 -->
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <select class="filter-select" id="department-level-2">
+                        <option value="all">二级部门</option>
+                        <!-- 选项将通过API获取后动态填充 -->
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 卡片容器 -->
+            <div class="hr-cards-container">
+                <!-- 卡片1: 员工入职年份 -->
+                <div id="card-1" class="hr-card">
+                    <div class="hr-card-header">
+                        <div>
+                            <h3 class="hr-card-title">员工入职年份</h3>
+                            <p class="hr-card-subtitle">员工入职年份分布</p>
+                        </div>
+                        <div class="card-expand-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </div>
+                    </div>
+                    <div class="hr-card-content">
+                        <div class="loading-indicator" id="card-1-loading">
+                            <i class="fas fa-spinner"></i> 正在加载数据...
+                        </div>
+                        <div class="chart-container" id="entry-year-chart" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <!-- 卡片2: 部门结构 -->
+                <div id="card-2" class="hr-card">
+                    <div class="hr-card-header">
+                        <div>
+                            <h3 class="hr-card-title">部门结构</h3>
+                            <p class="hr-card-subtitle">企业组织架构</p>
+                        </div>
+                        <div class="card-expand-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </div>
+                    </div>
+                    <div class="hr-card-content">
+                    </div>
+                </div>
+                
+                <!-- 卡片3: 员工分布 -->
+                <div id="card-3" class="hr-card">
+                    <div class="hr-card-header">
+                        <div>
+                            <h3 class="hr-card-title">员工分布</h3>
+                            <p class="hr-card-subtitle">各部门人员占比</p>
+                        </div>
+                        <div class="card-expand-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </div>
+                    </div>
+                    <div class="hr-card-content">
+                    </div>
+                </div>
+                
+                <!-- 卡片4: 人员画像 -->
+                <div id="card-4" class="hr-card">
+                    <div class="hr-card-header">
+                        <div>
+                            <h3 class="hr-card-title">人员画像</h3>
+                            <p class="hr-card-subtitle">员工特征分析</p>
+                        </div>
+                        <div class="card-expand-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </div>
+                    </div>
+                    <div class="hr-card-content">
+                    </div>
+                </div>
+                
+                <!-- 卡片5: 人员流动 -->
+                <div id="card-5" class="hr-card">
+                    <div class="hr-card-header">
+                        <div>
+                            <h3 class="hr-card-title">人员流动</h3>
+                            <p class="hr-card-subtitle">入职/离职情况</p>
+                        </div>
+                        <div class="card-expand-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </div>
+                    </div>
+                    <div class="hr-card-content">
+                    </div>
+                </div>
+                
+                <!-- 卡片6: 人员成本 -->
+                <div id="card-6" class="hr-card">
+                    <div class="hr-card-header">
+                        <div>
+                            <h3 class="hr-card-title">人员成本</h3>
+                            <p class="hr-card-subtitle">薪资与福利支出</p>
+                        </div>
+                        <div class="card-expand-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </div>
+                    </div>
+                    <div class="hr-card-content">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 在body结束标签前添加遮罩层 -->
+    <div class="card-overlay" id="card-overlay"></div>
+    
+    <!-- 明细数据弹框 -->
+    <div class="detail-modal" id="detail-modal">
+        <div class="detail-content">
+            <div class="detail-header">
+                <h2 class="detail-title">
+                    <i class="fas fa-users"></i>
+                    <span id="detail-title">员工入职明细</span>
+                    <span class="detail-count" id="detail-count">0</span>
+                </h2>
+                <div class="detail-close" id="detail-close">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="detail-body" id="detail-body">
+                <div class="detail-loading" id="detail-loading">
+                    <i class="fas fa-spinner"></i> 正在加载数据...
+                </div>
+                <table class="detail-table" id="detail-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>一级部门</th>
+                            <th>二级部门</th>
+                            <th>职位</th>
+                            <th>入职日期</th>
+                            <th>薪资</th>
+                            <th>绩效</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-table-body"></tbody>
+                </table>
+            </div>
+            <div class="table-footer" id="table-footer" style="display: none;">
+                <div class="table-info" id="table-info">显示 1-10 条，共 0 条</div>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <button class="export-btn" id="export-excel-btn">
+                        <i class="fas fa-file-excel"></i> 导出Excel
+                    </button>
+                    <div class="table-pagination" id="table-pagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 在body结束标签前添加选项卡弹窗 -->
+    <div class="tabs-modal" id="entry-year-tabs-modal">
+        <div class="tabs-content">
+            <div class="tabs-header">
+                <h2 class="tabs-title">员工入职年份分析</h2>
+                <div class="tabs-close" id="tabs-close">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="tabs-navigation">
+                <button class="tab-button active" data-tab="department-tab">部门维度</button>
+                <button class="tab-button" data-tab="position-tab">岗位维度</button>
+            </div>
+            <div class="tab-content active" id="department-tab">
+                <div class="tab-placeholder">
+                    <i class="fas fa-building"></i>
+                    <p>正在加载部门维度数据...</p>
+                </div>
+            </div>
+            <div class="tab-content" id="position-tab">
+                <div class="tab-placeholder">
+                    <i class="fas fa-user-tie"></i>
+                    <p>岗位维度数据分析</p>
+                    <p>暂无数据</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

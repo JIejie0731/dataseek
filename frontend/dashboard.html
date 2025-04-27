@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据可视化</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        main {
+            padding-top: 60px; /* 与导航栏高度一致，确保内容不被导航栏遮挡 */
+        }
+        .dashboard-container {
+            padding-top: 20px; /* 额外的顶部边距，使内容显示更合理 */
+        }
+        
+        /* 用户头像样式 */
+        .user-profile {
+            position: relative;
+            margin-left: 20px;
+        }
+        
+        /* 导航栏主题切换按钮 */
+        .navbar-theme-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+            margin-left: 20px;
+        }
+        
+        .navbar-theme-switcher:hover {
+            transform: scale(1.05);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .navbar-theme-switcher i {
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        body.dark-mode .navbar-theme-switcher:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: var(--primary-dark);
+        }
+        
+        .user-avatar:active {
+            transform: scale(0.95);
+            background-color: var(--primary-dark);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .user-menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 200px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 0;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .user-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .user-menu-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        
+        .user-menu-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .user-menu-header p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .user-menu-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .user-menu-item {
+            padding: 0;
+        }
+        
+        .user-menu-item a {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .user-menu-item a:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+            color: var(--primary-color);
+        }
+        
+        .user-menu-item i {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+        
+        .user-menu-divider {
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.05);
+            margin: 5px 0;
+        }
+        
+        body.dark-mode .user-menu {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .user-menu-header {
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark-mode .user-menu-item a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        body.dark-mode .user-menu-divider {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+    <!-- 添加统一的主题管理脚本 -->
+    <script>
+        // 初始化主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+        });
+        
+        // 初始化主题函数 - 在所有页面都可以使用
+        function initTheme() {
+            // 加载保存的主题
+            const isDarkMode = localStorage.getItem('dark-mode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // 找到所有主题切换按钮并添加事件监听
+            const themeSwitchers = document.querySelectorAll('.navbar-theme-switcher, .theme-switcher');
+            themeSwitchers.forEach(switcher => {
+                // 设置正确的初始图标
+                const icon = switcher.querySelector('i');
+                if (icon) {
+                    icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+                }
+                
+                // 添加点击事件
+                switcher.addEventListener('click', function() {
+                    toggleTheme();
+                });
+            });
+        }
+        
+        // 切换主题函数 - 在所有页面都可以使用
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('dark-mode', isDarkMode);
+            
+            // 更新所有主题切换按钮的图标
+            const icons = document.querySelectorAll('.navbar-theme-switcher i, .theme-switcher i');
+            icons.forEach(icon => {
+                icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="index.html" class="logo">
+                <img src="assets/logo-light.svg" alt="数据求索" class="logo-light">
+                <img src="assets/logo-dark.svg" alt="数据求索" class="logo-dark">
+            </a>
+        </div>
+        <div class="navbar-menu">
+            <a href="index.html" class="nav-item">首页</a>
+            <a href="dashboard.html" class="nav-item active">数据大屏</a>
+        </div>
+        <div class="navbar-actions">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatar">
+                    <span id="userInitials">用</span>
+                </div>
+                <div class="user-menu" id="userMenu">
+                    <div class="user-menu-header">
+                        <h4 id="userName">用户名</h4>
+                        <p id="userRole">数据分析师</p>
+                    </div>
+                    <ul class="user-menu-items">
+                        <li class="user-menu-item">
+                            <a href="#">
+                                <i class="fas fa-user"></i>
+                                个人资料
+                            </a>
+                        </li>
+                        <li class="user-menu-item">
+                            <a href="#">
+                                <i class="fas fa-cog"></i>
+                                账户设置
+                            </a>
+                        </li>
+                        <li class="user-menu-item">
+                            <a href="#">
+                                <i class="fas fa-bell"></i>
+                                通知中心
+                            </a>
+                        </li>
+                        <div class="user-menu-divider"></div>
+                        <li class="user-menu-item">
+                            <a href="#" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                退出登录
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="navbar-theme-switcher" id="themeSwitcher">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="dashboard-container">
+            <!-- 项目目录 - 苹果风格 -->
+            <div class="projects-directory">
+                <div class="directory-header">
+                    <h2>数据可视化项目集</h2>
+                    <p>选择一个项目开始您的数据分析之旅</p>
+                </div>
+                <div class="projects-grid">
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3>人力资源分析大屏</h3>
+                            <p>分析人力分布情况</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-clock"></i> 最近更新: 今天</span>
+                                <span class="project-status high">关注度高</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3>招聘效果追踪</h3>
+                            <p>跟踪不同招聘渠道的转化率和新员工绩效表现</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-clock"></i> 最近更新: 2天前</span>
+                                <span class="project-status medium">关注度中</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3>人才流失预测</h3>
+                            <p>基于历史数据预测可能离职的员工，提供风险预警</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-clock"></i> 最近更新: 1周前</span>
+                                <span class="project-status high">关注度高</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3>培训投资回报</h3>
+                            <p>评估员工培训项目的成本效益和绩效提升</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-clock"></i> 最近更新: 2周前</span>
+                                <span class="project-status medium">关注度中</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3>薪酬体系分析</h3>
+                            <p>分析薪酬结构与市场竞争力，优化薪酬策略</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-clock"></i> 最近更新: 1个月前</span>
+                                <span class="project-status low">关注度低</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-icon">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3>部门结构优化</h3>
+                            <p>分析部门人员配置效率，提供结构优化建议</p>
+                            <div class="project-meta">
+                                <span><i class="fas fa-clock"></i> 最近更新: 3个月前</span>
+                                <span class="project-status low">关注度低</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 检查用户是否已登录
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || !user.isLoggedIn) {
+                // 未登录，重定向到登录页面
+                window.location.href = 'login.html';
+            } else {
+                // 显示用户信息
+                updateUserInfo(user);
+            }
+            
+            // 用户头像点击事件
+            const userAvatar = document.getElementById('userAvatar');
+            const userMenu = document.getElementById('userMenu');
+            
+            if (userAvatar) {
+                userAvatar.addEventListener('click', function() {
+                    userMenu.classList.toggle('active');
+                });
+                
+                // 点击页面其他区域关闭菜单
+                document.addEventListener('click', function(event) {
+                    if (!userAvatar.contains(event.target) && !userMenu.contains(event.target)) {
+                        userMenu.classList.remove('active');
+                    }
+                });
+            }
+            
+            // 退出登录
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                });
+            }
+            
+            // 项目卡点击事件
+            const projectCards = document.querySelectorAll('.project-card');
+            projectCards.forEach((card, index) => {
+                card.addEventListener('click', function() {
+                    // 如果是第一个卡片（人力资源分析大屏），则跳转到对应页面
+                    if (index === 0) {
+                        window.location.href = 'hr-dashboard.html';
+                    } else {
+                        alert('该项目功能正在开发中，敬请期待！');
+                    }
+                });
+            });
+        });
+        
+        // 退出登录函数
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+        
+        // 更新用户信息
+        function updateUserInfo(user) {
+            const userInitials = document.getElementById('userInitials');
+            const userName = document.getElementById('userName');
+            const userRole = document.getElementById('userRole');
+            
+            if (user.username) {
+                if (userInitials) {
+                    userInitials.textContent = user.username.charAt(0).toUpperCase();
+                }
+                if (userName) {
+                    userName.textContent = user.username;
+                }
+            }
+            
+            if (user.role && userRole) {
+                userRole.textContent = user.role;
+            }
+        }
+    </script>
+</body>
+</html> 

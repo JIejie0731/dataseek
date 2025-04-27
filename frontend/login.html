@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - 数据求索</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="login.css">
+    <style>
+        /* 导航栏主题切换按钮 */
+        .navbar-theme-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+            margin-left: 20px;
+        }
+        
+        .navbar-theme-switcher:hover {
+            transform: scale(1.05);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .navbar-theme-switcher i {
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        body.dark-mode .navbar-theme-switcher:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+    <!-- 添加统一的主题管理脚本 -->
+    <script>
+        // 初始化主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+        });
+        
+        // 初始化主题函数 - 在所有页面都可以使用
+        function initTheme() {
+            // 加载保存的主题
+            const isDarkMode = localStorage.getItem('dark-mode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // 找到所有主题切换按钮并添加事件监听
+            const themeSwitchers = document.querySelectorAll('.navbar-theme-switcher, .theme-switcher');
+            themeSwitchers.forEach(switcher => {
+                // 设置正确的初始图标
+                const icon = switcher.querySelector('i');
+                if (icon) {
+                    icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+                }
+                
+                // 添加点击事件
+                switcher.addEventListener('click', function() {
+                    toggleTheme();
+                });
+            });
+        }
+        
+        // 切换主题函数 - 在所有页面都可以使用
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('dark-mode', isDarkMode);
+            
+            // 更新所有主题切换按钮的图标
+            const icons = document.querySelectorAll('.navbar-theme-switcher i, .theme-switcher i');
+            icons.forEach(icon => {
+                icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="index.html" class="logo">
+                <img src="assets/logo-light.svg" alt="数据求索" class="logo-light">
+                <img src="assets/logo-dark.svg" alt="数据求索" class="logo-dark">
+            </a>
+        </div>
+        <div class="navbar-menu">
+            <a href="index.html" class="nav-item">首页</a>
+            <a href="dashboard.html" class="nav-item">数据大屏</a>
+        </div>
+        <div class="navbar-actions">
+            <div class="navbar-theme-switcher" id="themeSwitcher">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+    </nav>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>欢迎使用数据求索</h2>
+                <p>登录或注册账号以访问数据大屏及更多功能</p>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" data-tab="login-tab">登录</div>
+                <div class="tab" data-tab="register-tab">注册</div>
+            </div>
+            
+            <div class="tab-content active" id="login-tab">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username">用户名</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="login-username" placeholder="请输入用户名" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">密码</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="login-password" placeholder="请输入密码" required>
+                        </div>
+                    </div>
+                    <div class="form-options">
+                        <div class="remember-me">
+                            <input type="checkbox" id="remember-me">
+                            <label for="remember-me">记住我</label>
+                        </div>
+                        <a href="#" class="forgot-password">忘记密码?</a>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-large btn-full">登录</button>
+                    </div>
+                </form>
+                
+                <div class="social-login">
+                    <p>使用社交账号登录</p>
+                    <div class="social-buttons">
+                        <button class="social-btn wechat"><i class="fab fa-weixin"></i></button>
+                        <button class="social-btn qq"><i class="fab fa-qq"></i></button>
+                        <button class="social-btn weibo"><i class="fab fa-weibo"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="register-tab">
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-username">用户名</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="register-username" placeholder="请设置用户名" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">邮箱</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="register-email" placeholder="请输入邮箱" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">密码</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="register-password" placeholder="请设置密码" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm-password">确认密码</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="register-confirm-password" placeholder="请再次输入密码" required>
+                        </div>
+                    </div>
+                    <div class="form-terms">
+                        <input type="checkbox" id="agree-terms" required>
+                        <label for="agree-terms">我已阅读并同意<a href="#">服务条款</a>和<a href="#">隐私政策</a></label>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-large btn-full">注册</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="login-footer">
+        <div class="container">
+            <p>&copy; 2023 数据求索. 保留所有权利.</p>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+    <script>
+        // 登录/注册页面的特定脚本
+        document.addEventListener('DOMContentLoaded', function() {
+            // 处理登录表单提交
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('login-username').value;
+                const password = document.getElementById('login-password').value;
+                
+                console.log('登录:', username, password);
+                
+                // 设置用户角色和权限
+                let role = '数据分析师';
+                
+                // 如果是admin用户，设置为管理员角色
+                if (username.toLowerCase() === 'admin') {
+                    role = '系统管理员';
+                }
+                
+                // 模拟成功登录
+                localStorage.setItem('user', JSON.stringify({
+                    username: username,
+                    isLoggedIn: true,
+                    role: role
+                }));
+                
+                // 重定向到仪表盘页面
+                window.location.href = 'dashboard.html';
+            });
+            
+            // 处理注册表单提交
+            document.getElementById('register-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('register-username').value;
+                const email = document.getElementById('register-email').value;
+                const password = document.getElementById('register-password').value;
+                
+                console.log('注册:', username, email, password);
+                
+                // 模拟成功注册并登录
+                localStorage.setItem('user', JSON.stringify({
+                    username: username,
+                    email: email,
+                    isLoggedIn: true,
+                    role: '数据分析师'
+                }));
+                
+                // 重定向到仪表盘页面
+                window.location.href = 'dashboard.html';
+            });
+            
+            // 处理标签切换
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // 移除所有活跃状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // 添加活跃状态
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

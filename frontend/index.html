@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据求索 - 个人数据分析平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* 导航栏主题切换按钮 */
+        .navbar-theme-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+            margin-left: 20px;
+        }
+        
+        .navbar-theme-switcher:hover {
+            transform: scale(1.05);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .navbar-theme-switcher i {
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        body.dark-mode .navbar-theme-switcher:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+    <!-- 添加统一的主题管理脚本 -->
+    <script>
+        // 初始化主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+        });
+        
+        // 初始化主题函数 - 在所有页面都可以使用
+        function initTheme() {
+            // 加载保存的主题
+            const isDarkMode = localStorage.getItem('dark-mode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // 找到所有主题切换按钮并添加事件监听
+            const themeSwitchers = document.querySelectorAll('.navbar-theme-switcher, .theme-switcher');
+            themeSwitchers.forEach(switcher => {
+                // 设置正确的初始图标
+                const icon = switcher.querySelector('i');
+                if (icon) {
+                    icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+                }
+                
+                // 添加点击事件
+                switcher.addEventListener('click', function() {
+                    toggleTheme();
+                });
+            });
+        }
+        
+        // 切换主题函数 - 在所有页面都可以使用
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('dark-mode', isDarkMode);
+            
+            // 更新所有主题切换按钮的图标
+            const icons = document.querySelectorAll('.navbar-theme-switcher i, .theme-switcher i');
+            icons.forEach(icon => {
+                icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="index.html" class="logo">
+                <img src="assets/logo-light.svg" alt="数据求索" class="logo-light">
+                <img src="assets/logo-dark.svg" alt="数据求索" class="logo-dark">
+            </a>
+        </div>
+        <div class="navbar-menu">
+            <a href="index.html" class="nav-item active">首页</a>
+            <a href="dashboard.html" class="nav-item">数据大屏</a>
+        </div>
+        <div class="navbar-actions">
+            <div class="navbar-theme-switcher" id="themeSwitcher">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="hero">
+            <h1><span>探索 · 分析 · 洞察</span>数据求索</h1>
+            <p>发现隐藏在数据背后的价值，让信息更有意义。数据求索，您的个性化数据分析与可视化平台，帮助您从海量数据中获取有价值的见解。</p>
+            
+            <div class="hero-buttons">
+                <a href="login.html" class="btn btn-large">
+                    <i class="fas fa-chart-pie"></i>
+                    开始探索
+                </a>
+                <a href="#" class="btn btn-outline btn-large">
+                    <i class="fas fa-play-circle"></i>
+                    观看演示
+                </a>
+            </div>
+            
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number">2.5M+ <i class="fas fa-arrow-up"></i></div>
+                    <div class="stat-label">数据处理量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">98% <i class="fas fa-arrow-up"></i></div>
+                    <div class="stat-label">精准度</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">实时监控</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">3.2K+</div>
+                    <div class="stat-label">用户数量</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <div class="section-title">
+                <h2>先进的数据分析能力</h2>
+                <p>我们的平台提供全面的数据分析工具，帮助您理解数据，发现趋势，做出明智决策。</p>
+            </div>
+            
+            <div class="cards-container">
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>交互式可视化</h3>
+                    <p>通过直观的图表和交互式界面，清晰呈现复杂数据，帮助您更好理解数据趋势和模式，实现数据驱动决策。</p>
+                    <a href="#" class="btn">
+                        了解更多
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>智能数据分析</h3>
+                    <p>利用先进的算法和人工智能技术，深入挖掘数据价值，自动识别异常模式，提供专业的分析报告和洞察。</p>
+                    <a href="#" class="btn">
+                        了解更多
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h3>实时数据监控</h3>
+                    <p>全天候监控重要指标变化，及时发现异常，确保您的数据安全和业务稳定运行，快速响应市场变化。</p>
+                    <a href="#" class="btn">
+                        了解更多
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="dashboard-preview">
+                <img src="https://cdn.pixabay.com/photo/2018/05/04/20/01/website-3374825_960_720.jpg" alt="数据大屏预览" class="dashboard-image">
+            </div>
+        </section>
+        
+        <section class="testimonials-section">
+            <div class="section-title">
+                <h2>用户反馈</h2>
+                <p>来自我们用户的真实评价</p>
+            </div>
+            
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        "数据求索平台极大地提高了我们的数据分析效率。直观的可视化工具让我们能够更快地理解数据并做出决策。强烈推荐！"
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="用户头像">
+                        </div>
+                        <div class="author-info">
+                            <h4>李明</h4>
+                            <p>数据分析师 @ 科技公司</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        "作为一名市场营销经理，我需要实时了解市场数据。数据求索提供的实时监控和分析报告帮助我们抓住了许多市场机会。"
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="用户头像">
+                        </div>
+                        <div class="author-info">
+                            <h4>王芳</h4>
+                            <p>市场营销经理 @ 电商平台</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        "智能数据分析功能非常强大，我们发现了很多以前被忽略的业务机会。用户界面也很直观，即使非技术人员也能轻松使用。"
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <img src="https://randomuser.me/api/portraits/men/62.jpg" alt="用户头像">
+                        </div>
+                        <div class="author-info">
+                            <h4>张伟</h4>
+                            <p>创始人 @ 初创企业</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h3>数据求索</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        专业的数据分析与可视化平台，帮助您从数据中获取价值。
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-weixin"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-weibo"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>产品</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">数据大屏</a></li>
+                        <li><a href="#">数据分析</a></li>
+                        <li><a href="#">实时监控</a></li>
+                        <li><a href="#">报表生成</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>资源</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">文档</a></li>
+                        <li><a href="#">教程</a></li>
+                        <li><a href="#">博客</a></li>
+                        <li><a href="#">案例研究</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>公司</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">关于我们</a></li>
+                        <li><a href="#">联系我们</a></li>
+                        <li><a href="#">加入我们</a></li>
+                        <li><a href="#">隐私政策</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2023 数据求索. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 登录/注册模态框 -->
+    <div class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-header">
+                <div class="tabs">
+                    <div class="tab active">登录</div>
+                    <div class="tab">注册</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="tab-content active">
+                    <form id="login-form" onsubmit="submitLogin(event)">
+                        <div class="form-group">
+                            <label for="login-username">用户名</label>
+                            <input type="text" id="login-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">密码</label>
+                            <input type="password" id="login-password" required>
+                        </div>
+                        <div class="form-footer">
+                            <button type="submit" class="btn btn-large">登录</button>
+                            <p class="form-link">没有账号？<a href="#" class="switch-to-register">注册一个</a></p>
+                        </div>
+                    </form>
+                </div>
+                <div class="tab-content">
+                    <form id="register-form" onsubmit="submitRegister(event)">
+                        <div class="form-group">
+                            <label for="register-username">用户名</label>
+                            <input type="text" id="register-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">邮箱</label>
+                            <input type="email" id="register-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">密码</label>
+                            <input type="password" id="register-password" required>
+                        </div>
+                        <div class="form-footer">
+                            <button type="submit" class="btn btn-large">注册</button>
+                            <p class="form-link">已有账号？<a href="#" class="switch-to-login">去登录</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+    <script>
+        // 这里保留任何模态框相关的脚本
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模态框逻辑
+            const loginModalBtn = document.querySelector('.btn-large');
+            const modal = document.querySelector('.modal');
+            const closeModal = document.querySelector('.close-modal');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const switchToRegister = document.querySelector('.switch-to-register');
+            const switchToLogin = document.querySelector('.switch-to-login');
+            
+            if (loginModalBtn) {
+                loginModalBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    modal.classList.add('active');
+                });
+            }
+            
+            if (closeModal) {
+                closeModal.addEventListener('click', function() {
+                    modal.classList.remove('active');
+                });
+            }
+            
+            if (tabs.length > 0) {
+                tabs.forEach(function(tab, index) {
+                    tab.addEventListener('click', function() {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tabContents.forEach(c => c.classList.remove('active'));
+                        
+                        this.classList.add('active');
+                        tabContents[index].classList.add('active');
+                    });
+                });
+            }
+            
+            if (switchToRegister) {
+                switchToRegister.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    tabs[0].classList.remove('active');
+                    tabs[1].classList.add('active');
+                    tabContents[0].classList.remove('active');
+                    tabContents[1].classList.add('active');
+                });
+            }
+            
+            if (switchToLogin) {
+                switchToLogin.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    tabs[1].classList.remove('active');
+                    tabs[0].classList.add('active');
+                    tabContents[1].classList.remove('active');
+                    tabContents[0].classList.add('active');
+                });
+            }
+        });
+        
+        // 登录提交
+        function submitLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            // 这里应该有实际的登录逻辑
+            console.log('登录:', username, password);
+            
+            // 模拟成功登录
+            localStorage.setItem('user', JSON.stringify({
+                username: username,
+                isLoggedIn: true,
+                role: '数据分析师'
+            }));
+            
+            // 重定向到仪表盘页面
+            window.location.href = 'dashboard.html';
+        }
+        
+        // 注册提交
+        function submitRegister(event) {
+            event.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            // 这里应该有实际的注册逻辑
+            console.log('注册:', username, email, password);
+            
+            // 模拟成功注册并登录
+            localStorage.setItem('user', JSON.stringify({
+                username: username,
+                email: email,
+                isLoggedIn: true,
+                role: '数据分析师'
+            }));
+            
+            // 重定向到仪表盘页面
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>
