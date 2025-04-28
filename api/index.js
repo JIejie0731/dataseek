@@ -5,21 +5,43 @@ const { Pool } = require('pg');
 require('dotenv').config();
 const app = express();
 
-// 配置数据库连接
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // 对于某些云数据库服务可能需要此配置
-  }
-});
+// 增加启动日志
+console.log('API服务正在启动...');
+console.log('环境变量检查：');
+console.log('- DATABASE_URL:', process.env.DATABASE_URL ? '已设置' : '未设置');
+console.log('- NODE_ENV:', process.env.NODE_ENV || 'development');
 
-// 数据库连接测试
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('数据库连接错误:', err);
-  } else {
-    console.log('数据库连接成功:', res.rows[0]);
-  }
+// 更健壮的数据库连接处理
+let pool;
+try {
+  // 配置数据库连接
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false // 对于某些云数据库服务可能需要此配置
+    }
+  });
+  
+  // 数据库连接测试
+  pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+      console.error('数据库连接错误:', err);
+    } else {
+      console.log('数据库连接成功:', res.rows[0]);
+    }
+  });
+} catch (error) {
+  console.error('初始化数据库连接池失败:', error);
+}
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+  console.error('API错误:', err.stack);
+  res.status(500).json({
+    error: '服务器内部错误',
+    message: err.message,
+    path: req.path
+  });
 });
 
 // 启用CORS
@@ -38,7 +60,8 @@ app.get('/api/test', (req, res) => {
   res.json({
     message: "API工作正常!",
     status: "success",
-    database: "已连接"
+    database: pool ? "已连接" : "连接失败",
+    timestamp: new Date().toISOString()
   });
 });
 
