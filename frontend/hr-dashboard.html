@@ -16,7 +16,12 @@
         
         // 构建API URL的辅助函数
         function getApiUrl(path) {
-            return `${API_BASE_URL}${path}`;
+            // 确保path路径格式正确
+            if (!path.startsWith('/')) {
+                path = '/' + path;
+            }
+            // API路径已经包含/api前缀
+            return `${API_BASE_URL}/api${path}`;
         }
     </script>
     

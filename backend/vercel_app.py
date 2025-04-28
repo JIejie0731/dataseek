@@ -23,7 +23,7 @@ db.init_app(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 注册蓝图
-app.register_blueprint(hr_bp)
+app.register_blueprint(hr_bp, url_prefix='/api')
 
 @app.route('/')
 def index():
