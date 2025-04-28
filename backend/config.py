@@ -12,15 +12,14 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-for-data-quest'
     DEBUG = os.environ.get('FLASK_DEBUG', 'True') == 'True'
     
-    # 数据库配置
-    DB_USER = os.environ.get('DB_USER') or 'root'
-    DB_PASSWORD = os.environ.get('DB_PASSWORD') or 'password'
-    DB_HOST = os.environ.get('DB_HOST') or 'localhost'
-    DB_PORT = os.environ.get('DB_PORT') or '3306'
-    DB_NAME = os.environ.get('DB_NAME') or 'hr_analytics'
+    # 数据库配置 - Neon PostgreSQL
+    DATABASE_URL = os.environ.get('DATABASE_URL') or 'postgresql://neondb_owner:npg_Rd4T5NcfHVie@ep-billowing-morning-a1zikan5-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
     
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+    # 修复postgres://前缀问题
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # CORS配置

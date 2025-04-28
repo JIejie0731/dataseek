@@ -20,7 +20,7 @@ app.config.from_object(Config)
 db.init_app(app)
 
 # 启用CORS
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 注册蓝图
 app.register_blueprint(hr_bp)
@@ -48,6 +48,17 @@ def test_api():
 def create_tables():
     """首次请求前创建数据表（如果不存在）"""
     db.create_all()
+    
+    # 检查数据库是否需要初始化数据
+    from models.department import Department
+    if Department.query.count() == 0:
+        try:
+            # 导入并运行数据初始化
+            from database.init_data import generate_mock_data
+            generate_mock_data()
+            print("已初始化测试数据")
+        except Exception as e:
+            print(f"初始化数据错误: {str(e)}")
 
 if __name__ == '__main__':
     # 初始化数据库
