@@ -1,4 +1,8 @@
-Flask==2.0.1
-Flask-CORS==3.0.10
-python-dotenv==0.19.1
-werkzeug==2.0.1 
+Flask==2.2.3
+Flask-Cors==3.0.10
+Flask-SQLAlchemy==3.0.3
+SQLAlchemy==2.0.4
+python-dotenv==1.0.0
+faker==18.3.1
+numpy==1.24.2
+pandas==1.5.3 

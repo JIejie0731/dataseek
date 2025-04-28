@@ -16,7 +16,7 @@
       "dest": "backend/vercel_app.py"
     },
     {
-      "src": "/(.*\\..*)",
+      "src": "/(.*\\..+)",
       "dest": "frontend/$1"
     },
     {
@@ -26,6 +26,7 @@
   ],
   "env": {
     "DATABASE_URL": "postgresql://neondb_owner:npg_Rd4T5NcfHVie@ep-billowing-morning-a1zikan5-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
-    "FLASK_ENV": "production"
+    "FLASK_ENV": "production",
+    "FLASK_APP": "backend/vercel_app.py"
   }
 } 

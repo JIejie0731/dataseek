@@ -1,6 +1,10 @@
+// 此脚本依赖于HTML中定义的全局函数getApiUrl
+// 确保在页面中的getApiUrl函数定义之后加载此脚本
+
 // 全局变量，存储当前过滤条件
 let currentPrimaryDept = 'all';
 let currentSecondaryDept = 'all';
+// 全局变量，存储图表实例
 let entryYearChart = null;
 
 // 初始化部门筛选联动
@@ -37,9 +41,6 @@ function initDepartmentFilters() {
                 currentSecondaryDept = this.value;
                 applyFilter();
             });
-            
-            // 初始加载数据
-            loadEntryYearData('all', 'all');
         })
         .catch(error => {
             console.error('获取部门数据失败:', error);
@@ -88,113 +89,100 @@ function applyFilter() {
     const primaryDept = currentPrimaryDept;
     const secondaryDept = currentSecondaryDept;
     
-    // 加载入职年份数据
+    // 更新入职年份统计图表
     loadEntryYearData(primaryDept, secondaryDept);
+    
+    // 在这里可以添加其他图表的更新逻辑
+    // ...
 }
 
-// 加载员工入职年份数据
-function loadEntryYearData(primaryDept, secondaryDept) {
-    // 显示加载指示器
-    document.getElementById('card-1-loading').style.display = 'flex';
-    document.getElementById('entry-year-chart').style.display = 'none';
+// 初始化所有功能
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成，开始初始化...');
     
-    // 构建API请求URL
-    const url = getApiUrl(`/api/hr/statistics/entry-year?primary_department=${primaryDept}&secondary_department=${secondaryDept}`);
+    // 首先初始化主题切换，确保界面风格一致
+    initThemeSwitcher();
     
-    // 获取数据
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            // 隐藏加载指示器，显示图表
-            document.getElementById('card-1-loading').style.display = 'none';
-            document.getElementById('entry-year-chart').style.display = 'block';
-            
-            // 渲染图表
-            renderEntryYearChart(data);
-        })
-        .catch(error => {
-            console.error('获取入职年份数据失败:', error);
-            document.getElementById('card-1-loading').style.display = 'none';
-            document.getElementById('entry-year-chart').innerHTML = '<div class="chart-error">加载数据失败</div>';
-            document.getElementById('entry-year-chart').style.display = 'flex';
+    // 初始化部门筛选器
+    initDepartmentFilters();
+    
+    // 初始化用户菜单
+    initUserMenu();
+    
+    // 初始化选项卡弹窗
+    initTabsModal();
+    
+    // 初始化卡片放大功能
+    initCardExpansion();
+    
+    // 绑定详情弹窗关闭按钮事件
+    const detailClose = document.getElementById('detail-close');
+    if (detailClose) {
+        detailClose.addEventListener('click', function() {
+            document.getElementById('detail-modal').classList.remove('active');
         });
-}
-
-// 渲染入职年份图表
-function renderEntryYearChart(data) {
-    const chartContainer = document.getElementById('entry-year-chart');
-    
-    // 如果已有图表实例，销毁它
-    if (entryYearChart) {
-        entryYearChart.dispose();
     }
     
-    // 初始化图表
-    entryYearChart = echarts.init(chartContainer);
-    
-    // 准备数据
-    const years = data.years || [];
-    const counts = data.counts || [];
-    
-    // 图表配置
-    const option = {
-        tooltip: {
-            trigger: 'axis',
-            formatter: '{b}: {c} 人',
-            axisPointer: {
-                type: 'shadow'
+    // 绑定导出Excel按钮事件
+    const exportExcelBtn = document.getElementById('export-excel-btn');
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', function() {
+            const detailData = window.currentDetailData;
+            if (detailData && detailData.length > 0) {
+                exportToExcel(detailData);
             }
-        },
-        grid: {
-            left: '3%',
-            right: '4%',
-            bottom: '3%',
-            containLabel: true
-        },
-        xAxis: {
-            type: 'category',
-            data: years,
-            axisLabel: {
-                rotate: 45
-            }
-        },
-        yAxis: {
-            type: 'value',
-            name: '人数'
-        },
-        series: [{
-            name: '入职人数',
-            type: 'bar',
-            data: counts,
-            itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#3b82f6' },
-                    { offset: 1, color: '#93c5fd' }
-                ])
-            },
-            emphasis: {
-                itemStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: '#2563eb' },
-                        { offset: 1, color: '#60a5fa' }
-                    ])
-                }
-            }
-        }]
-    };
+        });
+    }
     
-    // 设置图表
-    entryYearChart.setOption(option);
+    // 加载入职年份图表数据
+    loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+});
+
+// 初始化主题切换
+function initThemeSwitcher() {
+    const themeSwitcher = document.getElementById('themeSwitcher');
+    if (!themeSwitcher) {
+        console.error('找不到主题切换按钮');
+        return;
+    }
     
-    // 添加点击事件
-    entryYearChart.on('click', function(params) {
-        const year = params.name;
-        fetchEmployeesByYear(year, currentPrimaryDept, currentSecondaryDept);
-    });
+    const themeIcon = themeSwitcher.querySelector('i');
+    if (!themeIcon) {
+        console.error('找不到主题图标');
+        return;
+    }
     
-    // 监听窗口大小改变，调整图表大小
-    window.addEventListener('resize', function() {
-        entryYearChart.resize();
+    // 检查本地存储中的主题设置
+    const darkMode = localStorage.getItem('dark-mode') === 'true';
+    
+    // 应用保存的主题设置
+    if (darkMode) {
+        document.body.classList.add('dark-mode');
+        themeIcon.className = 'fas fa-sun';
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeIcon.className = 'fas fa-moon';
+    }
+    
+    // 绑定点击事件
+    themeSwitcher.addEventListener('click', function() {
+        // 切换暗色模式类
+        document.body.classList.toggle('dark-mode');
+        
+        // 获取切换后的状态
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        
+        // 更新图标
+        themeIcon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+        
+        // 保存到本地存储
+        localStorage.setItem('dark-mode', isDarkMode);
+        
+        // 如果入职年份图表已初始化，刷新它的颜色
+        if (entryYearChart) {
+            // 重新加载数据以更新图表颜色
+            loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+        }
     });
 }
 
@@ -213,15 +201,21 @@ function fetchEmployeesByYear(year, primaryDept, secondaryDept) {
     document.getElementById('detail-table').style.display = 'none';
     document.getElementById('table-footer').style.display = 'none';
     
+    console.log('获取员工明细数据，URL:', url);
+    
     // 获取数据
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP错误状态码: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('获取到员工明细数据:', data);
+            
             // 存储当前数据用于导出
             window.currentDetailData = data;
-            
-            // 显示数据总数
-            document.getElementById('detail-count').textContent = data.length;
             
             // 渲染表格
             renderDetailTable(data);
@@ -229,7 +223,7 @@ function fetchEmployeesByYear(year, primaryDept, secondaryDept) {
         .catch(error => {
             console.error('获取员工明细数据失败:', error);
             document.getElementById('detail-loading').style.display = 'none';
-            document.getElementById('detail-table').innerHTML = '<div class="detail-error">加载数据失败</div>';
+            document.getElementById('detail-table').innerHTML = `<div class="detail-error">加载数据失败: ${error.message}</div>`;
             document.getElementById('detail-table').style.display = 'block';
         });
 }
@@ -244,20 +238,29 @@ function renderDetailTable(data) {
     const tableBody = document.getElementById('detail-table-body');
     tableBody.innerHTML = '';
     
+    // 确保data是数组，如果是对象类型，尝试提取data字段
+    let employeeData = data;
+    if (data && !Array.isArray(data) && data.data) {
+        employeeData = data.data;
+    }
+    
     // 初始化分页
     const pageSize = 10;
-    const totalPages = Math.ceil(data.length / pageSize);
+    const totalPages = Math.ceil(employeeData.length / pageSize);
     let currentPage = 1;
+    
+    // 显示数据总数
+    document.getElementById('detail-count').textContent = employeeData.length;
     
     // 渲染页码
     renderPagination(totalPages, currentPage);
     
     // 显示当前页的数据
-    showPage(currentPage, data, pageSize);
+    showPage(currentPage, employeeData, pageSize);
     
     // 绑定导出按钮事件
     document.getElementById('export-excel-btn').onclick = function() {
-        exportToExcel(data);
+        exportToExcel(employeeData);
     };
 }
 
@@ -275,14 +278,15 @@ function showPage(page, data, pageSize) {
         const row = document.createElement('tr');
         
         row.innerHTML = `
-            <td>${employee.name || '-'}</td>
-            <td>${employee.primary_department || '-'}</td>
-            <td>${employee.secondary_department || '-'}</td>
-            <td>${employee.position || '-'}</td>
-            <td>${employee.entry_date || '-'}</td>
-            <td>${employee.salary ? '¥' + employee.salary.toLocaleString() : '-'}</td>
-            <td>${employee.performance || '-'}</td>
-            <td>${getStatusLabel(employee.status)}</td>
+            <td>${employee.姓名 || employee.name || '-'}</td>
+            <td>${employee.一级部门 || employee.primary_department || '-'}</td>
+            <td>${employee.二级部门 || employee.secondary_department || '-'}</td>
+            <td>${employee.职位 || employee.position || '-'}</td>
+            <td>${employee.入职日期 || employee.entry_date || '-'}</td>
+            <td>${employee.薪资 ? '¥' + parseFloat(employee.薪资).toLocaleString() : 
+                 employee.salary ? '¥' + employee.salary.toLocaleString() : '-'}</td>
+            <td>${employee.绩效 || employee.performance || '-'}</td>
+            <td>${getStatusLabel(employee.状态 || employee.status)}</td>
         `;
         
         tableBody.appendChild(row);
@@ -356,7 +360,13 @@ function renderPagination(totalPages, currentPage) {
 
 // 跳转到指定页
 function goToPage(page) {
-    const data = window.currentDetailData || [];
+    let data = window.currentDetailData || [];
+    
+    // 处理嵌套结构
+    if (data && !Array.isArray(data) && data.data) {
+        data = data.data;
+    }
+    
     const pageSize = 10;
     const totalPages = Math.ceil(data.length / pageSize);
     
@@ -391,14 +401,15 @@ function exportToExcel(data) {
     
     data.forEach(employee => {
         const row = [
-            employee.name || '',
-            employee.primary_department || '',
-            employee.secondary_department || '',
-            employee.position || '',
-            employee.entry_date || '',
-            employee.salary ? employee.salary.toString() : '',
-            employee.performance || '',
-            employee.status || ''
+            employee.姓名 || employee.name || '',
+            employee.一级部门 || employee.primary_department || '',
+            employee.二级部门 || employee.secondary_department || '',
+            employee.职位 || employee.position || '',
+            employee.入职日期 || employee.entry_date || '',
+            employee.薪资 ? employee.薪资.toString() : 
+                employee.salary ? employee.salary.toString() : '',
+            employee.绩效 || employee.performance || '',
+            employee.状态 || employee.status || ''
         ];
         
         excelData.push(row);
@@ -672,62 +683,6 @@ function exportDeptDataToExcel(data, primaryDept, secondaryDept) {
     });
 }
 
-// DOM加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化主题切换
-    initThemeSwitcher();
-    
-    // 初始化用户菜单
-    initUserMenu();
-    
-    // 初始化部门筛选
-    initDepartmentFilters();
-    
-    // 初始化明细弹框关闭按钮
-    document.getElementById('detail-close').addEventListener('click', function() {
-        document.getElementById('detail-modal').classList.remove('active');
-    });
-    
-    // 初始化选项卡功能
-    initTabsModal();
-});
-
-// 初始化主题切换
-function initThemeSwitcher() {
-    const themeSwitcher = document.getElementById('themeSwitcher');
-    const themeIcon = themeSwitcher.querySelector('i');
-    
-    // 检查本地存储中的主题设置
-    const darkMode = localStorage.getItem('darkMode') === 'true';
-    
-    // 应用保存的主题设置
-    if (darkMode) {
-        document.body.classList.add('dark-mode');
-        themeIcon.className = 'fas fa-sun';
-    }
-    
-    // 绑定点击事件
-    themeSwitcher.addEventListener('click', function() {
-        document.body.classList.toggle('dark-mode');
-        
-        // 更新图标
-        if (document.body.classList.contains('dark-mode')) {
-            themeIcon.className = 'fas fa-sun';
-            localStorage.setItem('darkMode', 'true');
-        } else {
-            themeIcon.className = 'fas fa-moon';
-            localStorage.setItem('darkMode', 'false');
-        }
-        
-        // 如果图表已初始化，重新渲染以适应主题
-        if (entryYearChart) {
-            entryYearChart.dispose();
-            const chartData = entryYearChart.getOption();
-            renderEntryYearChart({ years: chartData.xAxis[0].data, counts: chartData.series[0].data });
-        }
-    });
-}
-
 // 初始化用户菜单
 function initUserMenu() {
     const userAvatar = document.getElementById('userAvatar');
@@ -917,4 +872,380 @@ function renderDeptDimensionTable(data, primaryDept, secondaryDept) {
     
     departmentTab.appendChild(headerDiv);
     departmentTab.appendChild(tableContainer);
+}
+
+// 初始化卡片放大功能
+function initCardExpansion() {
+    const expandButtons = document.querySelectorAll('.card-expand-btn');
+    const cardOverlay = document.getElementById('card-overlay');
+    
+    // 绑定放大按钮点击事件
+    expandButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const card = this.closest('.hr-card');
+            
+            if (card.classList.contains('expanded')) {
+                // 收起卡片
+                collapseCard(card);
+            } else {
+                // 展开卡片
+                expandCard(card);
+            }
+        });
+    });
+    
+    // 点击遮罩层关闭展开的卡片
+    if (cardOverlay) {
+        cardOverlay.addEventListener('click', function() {
+            const expandedCard = document.querySelector('.hr-card.expanded');
+            if (expandedCard) {
+                collapseCard(expandedCard);
+            }
+        });
+    }
+    
+    // 展开卡片函数
+    function expandCard(card) {
+        // 保存卡片原始位置，用于后续恢复
+        const rect = card.getBoundingClientRect();
+        card.originalRect = {
+            top: rect.top + window.scrollY,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+        };
+        
+        // 在原位置创建占位符，保持页面布局不变
+        const placeholder = document.createElement('div');
+        placeholder.id = `placeholder-${card.id}`;
+        placeholder.style.width = `${rect.width}px`;
+        placeholder.style.height = `${rect.height}px`;
+        placeholder.style.margin = '0';
+        placeholder.style.padding = '0';
+        placeholder.style.visibility = 'hidden';
+        
+        // 插入占位符
+        card.parentNode.insertBefore(placeholder, card);
+        
+        // 先收起其他已展开的卡片
+        const expandedCards = document.querySelectorAll('.hr-card.expanded');
+        expandedCards.forEach(expandedCard => {
+            if (expandedCard !== card) {
+                collapseCard(expandedCard);
+            }
+        });
+        
+        // 设置卡片为绝对定位，脱离文档流
+        card.style.position = 'fixed';
+        card.style.top = '10vh';
+        card.style.left = '10vw';
+        card.style.width = '80vw';
+        card.style.height = '80vh';
+        card.style.zIndex = '1000';
+        
+        // 显示遮罩层
+        if (cardOverlay) {
+            cardOverlay.style.display = 'block';
+            setTimeout(() => {
+                cardOverlay.classList.add('active');
+            }, 10);
+        }
+        
+        // 保存当前滚动位置
+        window.cardScrollPosition = window.scrollY;
+        
+        // 添加展开类
+        card.classList.add('expanded');
+        
+        // 切换按钮图标
+        const icon = card.querySelector('.card-expand-btn i');
+        if (icon) {
+            icon.classList.replace('fa-expand-arrows-alt', 'fa-compress');
+        }
+        
+        // 调整图表大小
+        setTimeout(() => {
+            if (card.id === 'card-1' && entryYearChart) {
+                try {
+                    entryYearChart.resize();
+                } catch (e) {
+                    console.error('展开时调整图表大小失败:', e);
+                    // 尝试重新初始化图表
+                    try {
+                        loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+                    } catch (err) {
+                        console.error('重新加载图表失败:', err);
+                    }
+                }
+            }
+            // 可以添加其他图表的调整
+        }, 300);
+    }
+    
+    // 收起卡片函数
+    function collapseCard(card) {
+        // 找到对应的占位符
+        const placeholder = document.getElementById(`placeholder-${card.id}`);
+        
+        // 确保originalRect存在
+        if (!card.originalRect) {
+            console.error('找不到卡片的原始位置信息');
+            // 创建默认值以防止错误
+            card.originalRect = {
+                top: 0,
+                left: 0,
+                width: 300,
+                height: 200
+            };
+        }
+        
+        // 首先记录下当前的scrollY，因为后续的DOM操作可能会影响滚动位置
+        const currentScrollY = window.scrollY;
+        
+        // 先切换按钮图标 - 在其他样式变化前先执行视觉反馈
+        const icon = card.querySelector('.card-expand-btn i');
+        if (icon) {
+            icon.classList.replace('fa-compress', 'fa-expand-arrows-alt');
+        }
+        
+        // 准备回到原位 - 使用绝对定位临时设置
+        card.style.top = `${card.originalRect.top}px`;
+        card.style.left = `${card.originalRect.left}px`;
+        card.style.width = `${card.originalRect.width}px`;
+        card.style.height = `${card.originalRect.height}px`;
+        
+        // 移除展开类标记
+        card.classList.remove('expanded');
+        
+        // 处理图表尺寸 - 在位置变化之前调整
+        if (card.id === 'card-1' && entryYearChart) {
+            try {
+                // 预设置图表尺寸为原始尺寸
+                entryYearChart.resize({
+                    width: card.originalRect.width - 40, // 减去内边距
+                    height: card.originalRect.height - 80 // 减去标题和内边距
+                });
+            } catch(e) {
+                console.error('预调整图表尺寸失败:', e);
+            }
+        }
+        
+        // 隐藏遮罩层
+        if (cardOverlay) {
+            cardOverlay.classList.remove('active');
+            setTimeout(() => {
+                cardOverlay.style.display = 'none';
+            }, 300);
+        }
+        
+        // 恢复卡片原始样式和位置 - 必须在占位符删除前完成
+        setTimeout(() => {
+            card.style.transition = 'none'; // 暂时禁用过渡效果
+            card.style.position = '';
+            card.style.top = '';
+            card.style.left = '';
+            card.style.width = '';
+            card.style.height = '';
+            card.style.zIndex = '';
+            card.style.transform = '';
+            
+            // 移除占位符
+            if (placeholder) {
+                placeholder.parentNode.removeChild(placeholder);
+            }
+            
+            // 强制重绘
+            card.offsetHeight;
+            
+            // 恢复过渡效果
+            setTimeout(() => {
+                card.style.transition = '';
+            }, 50);
+            
+            // 恢复滚动位置
+            window.scrollTo({
+                top: currentScrollY,
+                behavior: 'auto'
+            });
+            
+            // 再次调整图表大小适应当前容器
+            setTimeout(() => {
+                if (card.id === 'card-1' && entryYearChart) {
+                    try {
+                        entryYearChart.resize();
+                    } catch (e) {
+                        console.error('收起时调整图表大小失败:', e);
+                        // 尝试重新初始化图表
+                        try {
+                            loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+                        } catch (err) {
+                            console.error('重新加载图表失败:', err);
+                        }
+                    }
+                }
+            }, 200);
+        }, 50);
+    }
+}
+
+// 加载入职年份统计数据
+function loadEntryYearData(primaryDept = 'all', secondaryDept = 'all') {
+    // 显示加载状态
+    const cardContent = document.querySelector('#card-1 .hr-card-content');
+    const placeholderContent = cardContent.querySelector('.placeholder-content');
+    const chartContainer = cardContent.querySelector('#entry-year-chart');
+    
+    placeholderContent.style.display = 'flex';
+    placeholderContent.innerHTML = '正在加载数据...';
+    chartContainer.style.display = 'none';
+    
+    // 构建查询参数
+    const queryParams = new URLSearchParams();
+    if (primaryDept !== 'all') {
+        queryParams.append('primary_department', primaryDept);
+    }
+    if (secondaryDept !== 'all') {
+        queryParams.append('secondary_department', secondaryDept);
+    }
+    
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    
+    // 调用API获取数据
+    fetch(getApiUrl(`/api/hr/statistics/entry-year${queryString}`))
+        .then(response => response.json())
+        .then(data => {
+            // 隐藏占位符，显示图表容器
+            placeholderContent.style.display = 'none';
+            chartContainer.style.display = 'block';
+            
+            // 渲染图表
+            renderEntryYearChart(data, chartContainer);
+        })
+        .catch(error => {
+            console.error('获取入职年份数据失败:', error);
+            placeholderContent.innerHTML = '加载数据失败，请刷新重试';
+            placeholderContent.style.display = 'flex';
+            chartContainer.style.display = 'none';
+        });
+}
+
+// 渲染入职年份图表
+function renderEntryYearChart(data, container) {
+    // 如果图表实例已存在，销毁它
+    if (entryYearChart) {
+        entryYearChart.dispose();
+    }
+    
+    // 创建新的图表实例
+    entryYearChart = echarts.init(container);
+    
+    // 构建图表数据
+    const years = data.year_data.map(item => item.year);
+    const counts = data.year_data.map(item => item.count);
+    
+    // 计算Y轴最大值，确保有足够的空间显示标签
+    const maxCount = Math.max(...counts, 1);
+    // 根据最大值确定合适的Y轴上限
+    let yMax = Math.ceil(maxCount * 1.2);
+    // 确保Y轴上限是10的倍数，以便显示更美观的刻度
+    yMax = Math.ceil(yMax / 10) * 10;
+    // 设置最小值为0，确保从0开始显示
+    const yMin = 0;
+    
+    // 图表配置
+    const option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'shadow'
+            },
+            formatter: '{b}年: {c}人'
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            top: '20px',
+            containLabel: true
+        },
+        xAxis: [{
+            type: 'category',
+            data: years,
+            axisTick: {
+                alignWithLabel: true
+            },
+            axisLabel: {
+                color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.7)' : '#666'
+            }
+        }],
+        yAxis: [{
+            type: 'value',
+            min: yMin,
+            max: yMax,
+            // 设置间隔为10，使刻度更合理
+            interval: 10,
+            axisLabel: {
+                color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.7)' : '#666',
+                formatter: '{value}人'
+            }
+        }],
+        series: [{
+            name: '入职人数',
+            type: 'bar',
+            barWidth: '60%',
+            data: counts.map((count, index) => {
+                return {
+                    value: count,
+                    itemStyle: {
+                        // 使用不同的颜色来区分不同的年份
+                        color: getBarColor(index, document.body.classList.contains('dark-mode'))
+                    }
+                };
+            }),
+            label: {
+                show: true,
+                position: 'top',
+                formatter: '{c}人',
+                color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.9)' : '#333'
+            }
+        }]
+    };
+    
+    // 设置图表选项并渲染
+    entryYearChart.setOption(option);
+    
+    // 标记图表已经有数据
+    container.dataset.hasData = true;
+    
+    // 处理窗口大小变化
+    window.addEventListener('resize', function() {
+        if (entryYearChart) {
+            entryYearChart.resize();
+        }
+    });
+    
+    // 给图表添加点击事件，点击柱状图显示该年的详细数据
+    entryYearChart.on('click', function(params) {
+        const year = params.name;
+        fetchEmployeesByYear(year, currentPrimaryDept, currentSecondaryDept);
+    });
+}
+
+// 获取柱状图颜色
+function getBarColor(index, isDarkMode) {
+    // 浅色模式颜色数组
+    const lightColors = [
+        '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+        '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'
+    ];
+    
+    // 深色模式颜色数组 - 稍微亮一些
+    const darkColors = [
+        '#7d9ef8', '#a4e283', '#ffd572', '#ff7e7e', '#90d9eb',
+        '#4fdbaa', '#ffac78', '#b883d2', '#f89fd3'
+    ];
+    
+    const colors = isDarkMode ? darkColors : lightColors;
+    return colors[index % colors.length];
 } 

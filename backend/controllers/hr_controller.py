@@ -183,20 +183,22 @@ def get_salary():
 def get_distinct_departments():
     """获取去重后的一级部门和二级部门列表"""
     try:
-        # 获取去重后的一级部门
+        # 获取去重后的一级部门（只考虑在职员工）
         primary_depts = db.session.query(distinct(Employee.primary_department)).\
             filter(Employee.primary_department != None).\
+            filter(Employee.status == '在职').\
             order_by(Employee.primary_department).all()
         
-        # 获取去重后的二级部门
+        # 获取去重后的二级部门（只考虑在职员工）
         secondary_depts = db.session.query(distinct(Employee.secondary_department)).\
             filter(Employee.secondary_department != None).\
+            filter(Employee.status == '在职').\
             order_by(Employee.secondary_department).all()
         
         # 格式化结果
         result = {
-            "primary_departments": [dept[0] for dept in primary_depts],
-            "secondary_departments": [dept[0] for dept in secondary_depts]
+            "primary_departments": [dept[0] for dept in primary_depts if dept[0]],  # 过滤掉空值
+            "secondary_departments": [dept[0] for dept in secondary_depts if dept[0]]  # 过滤掉空值
         }
         
         return jsonify(result)
