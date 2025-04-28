@@ -50,8 +50,8 @@ def create_tables():
     db.create_all()
     
     # 检查数据库是否需要初始化数据
-    from models.department import Department
-    if Department.query.count() == 0:
+    from models.employee import Employee
+    if Employee.query.count() == 0:
         try:
             # 导入并运行数据初始化
             from database.init_data import generate_mock_data

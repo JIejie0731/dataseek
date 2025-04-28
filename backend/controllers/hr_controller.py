@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify, request
 from models.employee import Employee
-from models.department import Department
 from database import db
 from sqlalchemy import func, distinct, extract
 import datetime
@@ -17,9 +16,40 @@ def get_employees():
 @hr_bp.route('/departments', methods=['GET'])
 def get_departments():
     """获取部门结构（树状）"""
-    # 只获取一级部门作为树的根节点
-    departments = Department.query.filter_by(parent_id=None).all()
-    return jsonify([dept.to_tree() for dept in departments])
+    # 直接从员工表构建部门树
+    primary_depts = db.session.query(distinct(Employee.primary_department)).\
+        filter(Employee.primary_department != None).\
+        order_by(Employee.primary_department).all()
+    
+    result = []
+    for primary_dept in primary_depts:
+        primary_name = primary_dept[0]
+        # 查找该一级部门下的所有二级部门
+        secondary_depts = db.session.query(distinct(Employee.secondary_department)).\
+            filter(Employee.primary_department == primary_name).\
+            order_by(Employee.secondary_department).all()
+        
+        # 构建部门树结构
+        dept_node = {
+            "name": primary_name,
+            "level": 1,
+            "employee_count": Employee.query.filter_by(primary_department=primary_name, status='在职').count(),
+            "children": []
+        }
+        
+        # 添加二级部门
+        for secondary_dept in secondary_depts:
+            secondary_name = secondary_dept[0]
+            dept_node["children"].append({
+                "name": secondary_name,
+                "level": 2,
+                "parent_name": primary_name,
+                "employee_count": Employee.query.filter_by(secondary_department=secondary_name, status='在职').count()
+            })
+        
+        result.append(dept_node)
+    
+    return jsonify(result)
 
 @hr_bp.route('/statistics/headcount', methods=['GET'])
 def get_headcount():
@@ -27,13 +57,12 @@ def get_headcount():
     # 总人数
     total_count = Employee.query.filter_by(status='在职').count()
     
-    # 部门人数分布
+    # 部门人数分布 - 使用一级部门
     dept_stats = db.session.query(
-        Department.name,
-        func.count(Employee.id).label('count')
-    ).join(Employee, Department.id == Employee.department_id)\
-    .filter(Employee.status == '在职')\
-    .group_by(Department.name).all()
+        Employee.primary_department,
+        func.count().label('count')
+    ).filter(Employee.status == '在职')\
+    .group_by(Employee.primary_department).all()
     
     dept_data = [{'name': name, 'value': count} for name, count in dept_stats]
     
@@ -113,13 +142,12 @@ def get_salary():
         func.avg(Employee.salary)
     ).filter(Employee.status == '在职').scalar() or 0
     
-    # 按部门统计平均薪资
+    # 按部门统计平均薪资 - 使用一级部门
     dept_salary = db.session.query(
-        Department.name,
+        Employee.primary_department,
         func.avg(Employee.salary).label('avg_salary')
-    ).join(Department, Department.id == Employee.department_id)\
-    .filter(Employee.status == '在职')\
-    .group_by(Department.name).all()
+    ).filter(Employee.status == '在职')\
+    .group_by(Employee.primary_department).all()
     
     # 薪资区间分布
     salary_ranges = {

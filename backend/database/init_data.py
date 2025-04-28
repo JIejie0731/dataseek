@@ -11,7 +11,6 @@ sys.path.insert(0, parent_dir)
 # 修改导入路径
 from app import app
 from database import db
-from models.department import Department
 from models.employee import Employee
 from database.db_manager import reset_db
 
@@ -35,60 +34,16 @@ def generate_mock_data():
         
         print("开始生成模拟数据...")
         
-        # 创建一级部门
-        dept_tech = Department(name='技术中心', level=1)
-        dept_sales = Department(name='销售中心', level=1)
-        dept_ops = Department(name='运营中心', level=1)
-        dept_product = Department(name='产品中心', level=1)
-        dept_finance = Department(name='财务中心', level=1)
+        # 定义部门结构 - 不再创建部门表，只在内存中定义结构
+        primary_departments = {
+            '技术中心': ['研发部', '测试部', '运维部', '数据部', '架构部'],
+            '销售中心': ['国内销售', '海外销售', '电话销售', '渠道销售'],
+            '运营中心': ['市场运营', '客户运营', '内容运营', '活动运营'],
+            '产品中心': ['产品设计', '用户体验', '产品运营', '产品分析'],
+            '财务中心': ['财务核算', '资金管理', '税务管理', '预算管理']
+        }
         
-        db.session.add_all([dept_tech, dept_sales, dept_ops, dept_product, dept_finance])
-        db.session.commit()
-        
-        print("已创建一级部门")
-        
-        # 创建二级部门
-        tech_depts = [
-            Department(name='研发部', parent_id=dept_tech.id, level=2),
-            Department(name='测试部', parent_id=dept_tech.id, level=2),
-            Department(name='运维部', parent_id=dept_tech.id, level=2),
-            Department(name='数据部', parent_id=dept_tech.id, level=2),
-            Department(name='架构部', parent_id=dept_tech.id, level=2)
-        ]
-        
-        sales_depts = [
-            Department(name='国内销售', parent_id=dept_sales.id, level=2),
-            Department(name='海外销售', parent_id=dept_sales.id, level=2),
-            Department(name='电话销售', parent_id=dept_sales.id, level=2),
-            Department(name='渠道销售', parent_id=dept_sales.id, level=2)
-        ]
-        
-        ops_depts = [
-            Department(name='市场运营', parent_id=dept_ops.id, level=2),
-            Department(name='客户运营', parent_id=dept_ops.id, level=2),
-            Department(name='内容运营', parent_id=dept_ops.id, level=2),
-            Department(name='活动运营', parent_id=dept_ops.id, level=2)
-        ]
-        
-        product_depts = [
-            Department(name='产品设计', parent_id=dept_product.id, level=2),
-            Department(name='用户体验', parent_id=dept_product.id, level=2),
-            Department(name='产品运营', parent_id=dept_product.id, level=2),
-            Department(name='产品分析', parent_id=dept_product.id, level=2)
-        ]
-        
-        finance_depts = [
-            Department(name='财务核算', parent_id=dept_finance.id, level=2),
-            Department(name='资金管理', parent_id=dept_finance.id, level=2),
-            Department(name='税务管理', parent_id=dept_finance.id, level=2),
-            Department(name='预算管理', parent_id=dept_finance.id, level=2)
-        ]
-        
-        all_depts = tech_depts + sales_depts + ops_depts + product_depts + finance_depts
-        db.session.add_all(all_depts)
-        db.session.commit()
-        
-        print("已创建二级部门")
+        print("已定义部门结构")
         
         # 生成员工数据
         employees = []
@@ -97,41 +52,49 @@ def generate_mock_data():
         
         print("开始生成员工数据...")
         
-        for dept in all_depts:
-            # 每个部门生成5-15名员工
-            for _ in range(random.randint(5, 15)):
-                # 随机入职日期，1-5年内
-                days_ago = random.randint(30, 5*365)
-                entry_date = now - timedelta(days=days_ago)
-                
-                # 随机薪资，根据职级
-                position_level = random.randint(0, 4)
-                position = f"{positions[position_level]}{dept.name.replace('部','').replace('中心','')}工程师"
-                base_salary = 8000 + position_level * 3000
-                salary = base_salary * (1 + random.random() * 0.5)
-                
-                # 随机绩效，3-5之间
-                performance = 3 + random.random() * 2
-                
-                # 状态，90%在职，10%离职
-                status = '在职' if random.random() < 0.9 else '离职'
-                
-                # 创建员工
-                emp = Employee(
-                    name=generate_chinese_name(),
-                    department_id=dept.id,
-                    position=position,
-                    entry_date=entry_date,
-                    salary=round(salary, 2),
-                    performance=round(performance, 1),
-                    status=status
-                )
-                employees.append(emp)
+        # 为每个部门创建员工
+        for primary_dept, secondary_depts in primary_departments.items():
+            for secondary_dept in secondary_depts:
+                # 每个部门生成5-15名员工
+                for _ in range(random.randint(5, 15)):
+                    # 随机入职日期，1-5年内
+                    days_ago = random.randint(30, 5*365)
+                    entry_date = now - timedelta(days=days_ago)
+                    
+                    # 随机薪资，根据职级
+                    position_level = random.randint(0, 4)
+                    position = f"{positions[position_level]}{secondary_dept.replace('部','').replace('中心','')}工程师"
+                    base_salary = 8000 + position_level * 3000
+                    salary = base_salary * (1 + random.random() * 0.5)
+                    
+                    # 随机绩效，3-5之间
+                    performance = 3 + random.random() * 2
+                    
+                    # 状态，90%在职，10%离职
+                    status = '在职' if random.random() < 0.9 else '离职'
+                    
+                    # 创建员工，直接存储部门名称
+                    emp = Employee(
+                        name=generate_chinese_name(),
+                        primary_department=primary_dept,
+                        secondary_department=secondary_dept,
+                        position=position,
+                        entry_date=entry_date,
+                        salary=round(salary, 2),
+                        performance=round(performance, 1),
+                        status=status
+                    )
+                    employees.append(emp)
         
         db.session.add_all(employees)
         db.session.commit()
         
-        print(f"已生成 {len(all_depts)} 个部门和 {len(employees)} 名员工的模拟数据")
+        # 验证数据
+        emp_count = Employee.query.count()
+        primary_count = db.session.query(db.func.count(db.distinct(Employee.primary_department))).scalar()
+        secondary_count = db.session.query(db.func.count(db.distinct(Employee.secondary_department))).scalar()
+        
+        print(f"已生成 {emp_count} 名员工数据，覆盖 {primary_count} 个一级部门和 {secondary_count} 个二级部门")
 
 if __name__ == '__main__':
     generate_mock_data() 
