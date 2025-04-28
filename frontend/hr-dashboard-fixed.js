@@ -6,94 +6,265 @@ let currentPrimaryDept = 'all';
 let currentSecondaryDept = 'all';
 // 全局变量，存储图表实例
 let entryYearChart = null;
+let secondaryDeptChart = null;
 
 // 初始化部门筛选联动
 function initDepartmentFilters() {
-    const level1Select = document.getElementById('department-level-1');
-    const level2Select = document.getElementById('department-level-2');
+    const primaryDeptSelect = document.getElementById('primary-department-select');
+    const secondaryDeptSelect = document.getElementById('secondary-department-select');
     
-    // 从API获取部门数据
+    // 默认的选项
+    const defaultPrimaryOptions = `<option value="all">全部</option>`;
+    const defaultSecondaryOptions = `<option value="all">全部</option>`;
+    
+    // 确保下拉菜单初始状态是正确的
+    primaryDeptSelect.innerHTML = defaultPrimaryOptions;
+    secondaryDeptSelect.innerHTML = defaultSecondaryOptions;
+    
+    console.log('开始初始化部门筛选器...');
+    
+    // 获取部门数据
     fetch(getApiUrl('/api/hr/departments/distinct'))
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP错误状态码: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            // 保存二级部门数据到全局变量
-            window.secondaryDepartments = data.secondary_departments || [];
-            
-            // 填充一级部门下拉框
-            const primaryDepts = data.primary_departments || [];
-            let optionsHtml = '<option value="all">一级部门</option>';
-            
-            primaryDepts.forEach(dept => {
-                optionsHtml += `<option value="${dept}">${dept}</option>`;
-            });
-            
-            level1Select.innerHTML = optionsHtml;
-            
-            // 监听一级部门选择变化
-            level1Select.addEventListener('change', function() {
-                currentPrimaryDept = this.value;
-                updateSecondaryDepartments(this.value);
-                applyFilter();
-            });
-            
-            // 监听二级部门选择变化
-            level2Select.addEventListener('change', function() {
-                currentSecondaryDept = this.value;
-                applyFilter();
-            });
+            console.log('获取到部门数据:', data);
+            if (data && data.primary_departments) {
+                // 清空原有选项并填充新选项
+                primaryDeptSelect.innerHTML = defaultPrimaryOptions;
+                
+                // 添加一级部门选项
+                data.primary_departments.forEach(dept => {
+                    if (dept) {  // 确保部门名称不为空
+                        const option = document.createElement('option');
+                        option.value = dept;
+                        option.textContent = dept;
+                        primaryDeptSelect.appendChild(option);
+                    }
+                });
+                
+                // 为一级部门选择器添加变更事件
+                primaryDeptSelect.addEventListener('change', function() {
+                    console.log('一级部门变更为:', this.value);
+                    currentPrimaryDept = this.value;
+                    loadSecondaryDepartments(data, this.value);
+                });
+                
+                // 为二级部门选择器添加变更事件
+                secondaryDeptSelect.addEventListener('change', function() {
+                    console.log('二级部门变更为:', this.value);
+                    currentSecondaryDept = this.value;
+                    applyFilter();
+                });
+                
+                // 初始加载二级部门
+                loadSecondaryDepartments(data, 'all');
+            }
         })
         .catch(error => {
             console.error('获取部门数据失败:', error);
+            // 如果API调用失败，至少提供默认选项
+            primaryDeptSelect.innerHTML = defaultPrimaryOptions;
+            secondaryDeptSelect.innerHTML = defaultSecondaryOptions;
         });
+}
+
+// 根据选中的一级部门加载对应的二级部门
+function loadSecondaryDepartments(departmentData, selectedPrimaryDept) {
+    const secondaryDeptSelect = document.getElementById('secondary-department-select');
     
-    // 更新二级部门下拉框
-    function updateSecondaryDepartments(primaryDept) {
-        // 重置二级部门下拉框
-        level2Select.innerHTML = '<option value="all">二级部门</option>';
+    console.log(`加载二级部门, 当前选中的一级部门: ${selectedPrimaryDept}`);
+    
+    // 重置二级部门下拉框到加载状态
+    secondaryDeptSelect.disabled = true;
+    secondaryDeptSelect.innerHTML = '<option value="">加载中...</option>';
+    
+    // 如果选择了"全部"一级部门
+    if (selectedPrimaryDept === 'all') {
+        console.log('选择了"全部"一级部门，重置二级部门选择器');
+        secondaryDeptSelect.innerHTML = '<option value="all">全部</option>';
+        secondaryDeptSelect.value = 'all';
+        secondaryDeptSelect.disabled = false;
+        currentSecondaryDept = 'all';
         
-        // 如果选择了特定的一级部门，筛选相关的二级部门
-        if (primaryDept !== 'all' && window.secondaryDepartments) {
-            // 获取员工数据以找出与一级部门相关的二级部门
-            fetch(getApiUrl(`/api/hr/employees`))
-                .then(response => response.json())
-                .then(data => {
-                    const relatedDepts = new Set();
-                    
-                    // 筛选与选中一级部门相关的二级部门
-                    data.forEach(employee => {
-                        if (employee.primary_department === primaryDept && employee.secondary_department) {
-                            relatedDepts.add(employee.secondary_department);
-                        }
-                    });
-                    
-                    // 填充二级部门下拉框
-                    Array.from(relatedDepts).sort().forEach(dept => {
-                        level2Select.innerHTML += `<option value="${dept}">${dept}</option>`;
-                    });
-                })
-                .catch(error => {
-                    console.error('获取员工数据失败:', error);
-                });
-        } else if (primaryDept === 'all' && window.secondaryDepartments) {
-            // 如果选择"全部"，显示所有二级部门
-            window.secondaryDepartments.forEach(dept => {
-                level2Select.innerHTML += `<option value="${dept}">${dept}</option>`;
-            });
+        // 如果当前有活跃的模态窗口，刷新图表
+        if (document.querySelector('.modal.active')) {
+            refreshCharts();
         }
+        
+        applyFilter();
+        return; // 不需要请求API
     }
+    
+    // 构建API URL，请求二级部门数据
+    const apiUrl = getApiUrl(`/api/hr/departments/secondary?primary=${encodeURIComponent(selectedPrimaryDept)}`);
+    console.log(`请求二级部门API: ${apiUrl}`);
+    
+    // 显示加载指示器
+    const loadingIndicator = document.getElementById('secondary-department-loading');
+    if (loadingIndicator) loadingIndicator.style.display = 'inline-block';
+    
+    // 发起请求获取二级部门数据
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP错误! 状态码: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('获取到二级部门数据:', data);
+            
+            if (!data || !Array.isArray(data.departments)) {
+                console.error('二级部门数据格式不正确:', data);
+                throw new Error('二级部门数据格式不正确');
+            }
+            
+            // 清空并重建二级部门选项
+            secondaryDeptSelect.innerHTML = '<option value="all">全部</option>';
+            
+            // 如果没有二级部门数据
+            if (data.departments.length === 0) {
+                console.warn(`一级部门 "${selectedPrimaryDept}" 没有关联的二级部门`);
+                const noDataOption = document.createElement('option');
+                noDataOption.value = 'none';
+                noDataOption.textContent = '无二级部门';
+                secondaryDeptSelect.appendChild(noDataOption);
+                secondaryDeptSelect.value = 'all';
+            } else {
+                // 添加二级部门选项
+                data.departments.forEach(dept => {
+                    if (dept) {  // 确保部门名称不为空
+                        const option = document.createElement('option');
+                        option.value = dept;
+                        option.textContent = dept;
+                        secondaryDeptSelect.appendChild(option);
+                    }
+                });
+                secondaryDeptSelect.value = 'all';
+            }
+            
+            currentSecondaryDept = 'all';
+            
+            // 如果当前有活跃的模态窗口，刷新图表
+            if (document.querySelector('.modal.active')) {
+                refreshCharts();
+            }
+            
+            // 应用筛选器
+            applyFilter();
+        })
+        .catch(error => {
+            console.error('获取二级部门失败:', error);
+            
+            // 清空并显示错误选项
+            secondaryDeptSelect.innerHTML = '<option value="all">全部</option>';
+            const errorOption = document.createElement('option');
+            errorOption.value = 'error';
+            errorOption.textContent = '加载失败';
+            secondaryDeptSelect.appendChild(errorOption);
+            secondaryDeptSelect.value = 'all';
+            currentSecondaryDept = 'all';
+            
+            // 应用筛选器
+            applyFilter();
+        })
+        .finally(() => {
+            // 隐藏加载指示器
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            // 启用选择器
+            secondaryDeptSelect.disabled = false;
+        });
+}
+
+// 更新二级部门数据
+function updateSecondaryDeptData() {
+    console.log('更新二级部门数据...');
+    
+    // 获取当前选中的部门
+    const primaryDeptSelect = document.getElementById('primary-department-select');
+    const secondaryDeptSelect = document.getElementById('secondary-department-select');
+    
+    const primaryDept = primaryDeptSelect.value;
+    const secondaryDept = secondaryDeptSelect.value;
+    
+    console.log(`当前选中一级部门：${primaryDept}，二级部门：${secondaryDept}`);
+    
+    // 构建API URL
+    const apiUrl = getApiUrl(`/api/hr/statistics/entry-year-by-dept?primary_department=${encodeURIComponent(primaryDept)}&secondary_department=${encodeURIComponent(secondaryDept)}`);
+    console.log(`请求API: ${apiUrl}`);
+    
+    // 显示加载状态
+    const loadingIndicator = document.getElementById('secondary-dept-data-loading');
+    if (loadingIndicator) loadingIndicator.style.display = 'inline-block';
+    
+    const dataContainer = document.getElementById('secondary-dept-data-container');
+    if (dataContainer) dataContainer.innerHTML = '<div class="loading-text">加载数据中...</div>';
+    
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`请求失败: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('获取到二级部门数据:', data);
+            
+            // 处理数据
+            if (data && Array.isArray(data.data)) {
+                // 在这里可以渲染数据，例如用ECharts绘制图表
+                renderSecondaryDeptTable(data.data);
+                renderSecondaryDeptEntryYearChart(data.data);
+            } else {
+                console.error('数据格式不正确:', data);
+                if (dataContainer) {
+                    dataContainer.innerHTML = '<div class="error-message">数据格式不正确，无法显示</div>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('获取二级部门数据失败:', error);
+            // 显示错误信息
+            if (dataContainer) {
+                dataContainer.innerHTML = `<div class="error-message">获取数据失败: ${error.message}</div>`;
+            }
+        })
+        .finally(() => {
+            // 隐藏加载指示器
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+        });
 }
 
 // 应用部门筛选
 function applyFilter() {
     // 获取筛选条件
-    const primaryDept = currentPrimaryDept;
-    const secondaryDept = currentSecondaryDept;
+    const primarySelect = document.getElementById('primary-department-select');
+    const secondarySelect = document.getElementById('secondary-department-select');
     
-    // 更新入职年份统计图表
-    loadEntryYearData(primaryDept, secondaryDept);
-    
-    // 在这里可以添加其他图表的更新逻辑
-    // ...
+    if (primarySelect && secondarySelect) {
+        currentPrimaryDept = primarySelect.value;
+        currentSecondaryDept = secondarySelect.value;
+        
+        console.log('应用筛选:', currentPrimaryDept, currentSecondaryDept);
+        
+        // 更新入职年份统计图表
+        loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+        
+        // 检查是否有打开的模态框，如果有，刷新相关数据
+        const modal = document.getElementById('entry-year-tabs-modal');
+        if (modal && modal.classList.contains('active')) {
+            // 更新部门维度数据
+            loadDepartmentDimensionData();
+            
+            // 更新二级部门数据
+            loadSecondaryDeptEntryYearData();
+        }
+    }
 }
 
 // 初始化所有功能
@@ -183,6 +354,9 @@ function initThemeSwitcher() {
             // 重新加载数据以更新图表颜色
             loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
         }
+        
+        // 刷新图表数据
+        refreshCharts();
     });
 }
 
@@ -715,44 +889,101 @@ function initUserMenu() {
 
 // 初始化选项卡弹窗
 function initTabsModal() {
-    const entryYearTabsModal = document.getElementById('entry-year-tabs-modal');
-    const tabsClose = document.getElementById('tabs-close');
-    const tabButtons = document.querySelectorAll('.tab-button');
-    
-    // 绑定卡片1标题点击事件，打开选项卡弹窗
+    // 绑定card-1标题点击事件
     const card1Title = document.querySelector('#card-1 .hr-card-title');
     card1Title.classList.add('clickable-title');
     card1Title.addEventListener('click', function() {
-        entryYearTabsModal.classList.add('active');
+        // 激活模态框
+        const modal = document.getElementById('entry-year-tabs-modal');
+        modal.classList.add('active');
+        // 加载默认数据（按年份统计）
+        loadEntryYearData();
         
         // 加载部门维度数据
-        loadEntryYearByDept(currentPrimaryDept, currentSecondaryDept);
-    });
-    
-    // 绑定关闭按钮事件
-    tabsClose.addEventListener('click', function() {
-        entryYearTabsModal.classList.remove('active');
-    });
-    
-    // 绑定选项卡切换事件
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // 移除所有选项卡的激活状态
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // 移除所有内容的激活状态
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
+        loadDepartmentDimensionData();
+        
+        // 加载二级部门维度数据
+        loadSecondaryDeptEntryYearData();
+        
+        // 绑定关闭事件
+        const closeBtn = modal.querySelector('.close-button');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
             });
-            
-            // 激活当前选项卡和内容
+        }
+        
+        // 绑定标签切换事件 - 修复标签切换逻辑
+        bindTabEvents(modal);
+    });
+    
+    // 绑定card-1模态框中的标签切换事件
+    const card1Modal = document.getElementById('card-1-modal');
+    if (card1Modal) {
+        bindModalTabEvents(card1Modal);
+    }
+}
+
+// 绑定标签切换事件
+function bindTabEvents(modal) {
+    const tabs = modal.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // 移除所有标签的active类
+            tabs.forEach(t => t.classList.remove('active'));
+            // 给当前标签添加active类
             this.classList.add('active');
-            const tabId = this.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
             
-            // 如果是部门维度选项卡，加载数据
-            if (tabId === 'department-tab') {
-                loadEntryYearByDept(currentPrimaryDept, currentSecondaryDept);
+            // 隐藏所有内容区域
+            const contentAreas = modal.querySelectorAll('.tab-content');
+            contentAreas.forEach(area => area.classList.remove('active'));
+            
+            // 显示对应的内容区域
+            const targetId = this.getAttribute('data-target');
+            document.getElementById(targetId).classList.add('active');
+            
+            // 根据选中的标签加载数据
+            if (targetId === 'year-tab-content') {
+                loadEntryYearData();
+            } else if (targetId === 'department-tab-content') {
+                loadDepartmentDimensionData();
+            } else if (targetId === 'secondary-tab-content') {
+                // 加载二级部门数据
+                loadSecondaryDeptEntryYearData();
+            }
+        });
+    });
+}
+
+// 为card-1-modal中的标签添加点击事件
+function bindModalTabEvents(modal) {
+    const tabLinks = modal.querySelectorAll('.tab-link');
+    tabLinks.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // 移除所有标签的active类
+            tabLinks.forEach(t => t.classList.remove('active'));
+            // 给当前标签添加active类
+            this.classList.add('active');
+            
+            // 隐藏所有内容区域
+            const contentAreas = modal.querySelectorAll('.tab-content');
+            contentAreas.forEach(area => area.classList.remove('active'));
+            
+            // 显示对应的内容区域
+            const targetId = this.getAttribute('data-target').substring(1); // 移除#前缀
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                targetElement.classList.add('active');
+                
+                // 根据选中的标签加载数据
+                if (targetId === 'entry-year-tab') {
+                    loadEntryYearData(currentPrimaryDept, currentSecondaryDept);
+                } else if (targetId === 'department-tab') {
+                    loadDepartmentDimensionData(); 
+                } else if (targetId === 'secondary-dept-tab') {
+                    // 加载二级部门数据
+                    loadSecondaryDeptEntryYearData();
+                }
             }
         });
     });
@@ -1248,4 +1479,557 @@ function getBarColor(index, isDarkMode) {
     
     const colors = isDarkMode ? darkColors : lightColors;
     return colors[index % colors.length];
+}
+
+// 添加新函数用于加载二级部门入职年份数据
+function loadSecondaryDeptEntryYearData() {
+    // 获取当前选择的主部门
+    const primaryDept = currentPrimaryDept;
+    
+    console.log('加载二级部门数据，使用一级部门:', primaryDept);
+    
+    // 首先尝试获取card-1-modal中的元素
+    let secondaryTabLoading = document.getElementById('secondary-dept-tab-loading');
+    let secondaryTabContent = document.getElementById('secondary-dept-tab-content');
+    let secondaryTabError = document.getElementById('secondary-dept-tab');
+    let chartContainer = document.getElementById('secondary-dept-chart');
+    let tableContainer = document.getElementById('secondary-dept-table');
+    
+    // 如果找不到元素，尝试在其他模态框中查找
+    if (!chartContainer || !tableContainer) {
+        console.log('在card-1-modal中找不到图表容器，尝试在其他模态框中查找');
+        
+        // 尝试查找其他可能的元素ID
+        const modalContent = document.querySelector('.tab-content[data-tab="secondary"]');
+        if (modalContent) {
+            secondaryTabLoading = modalContent.querySelector('.loading-indicator');
+            chartContainer = modalContent.querySelector('.chart-container');
+            tableContainer = modalContent.querySelector('.table-container');
+            secondaryTabError = modalContent.querySelector('.error-message');
+        }
+    }
+    
+    // 显示加载状态
+    if (secondaryTabLoading) secondaryTabLoading.style.display = 'flex';
+    if (secondaryTabContent) secondaryTabContent.classList.add('loading');
+    
+    // 如果仍然找不到容器，则无法继续
+    if (!chartContainer && !tableContainer) {
+        console.error('在所有可能的位置都找不到二级部门图表或表格容器');
+        return;
+    }
+    
+    // 使用存在的容器
+    const actualChartContainer = chartContainer || document.createElement('div');
+    const actualTableContainer = tableContainer || document.createElement('div');
+    
+    // 清除错误信息
+    if (secondaryTabError) secondaryTabError.style.display = 'none';
+    
+    // 如果一级部门是"全部"，显示提示信息
+    if (primaryDept === 'all') {
+        // 隐藏加载状态
+        if (secondaryTabLoading) secondaryTabLoading.style.display = 'none';
+        if (secondaryTabContent) secondaryTabContent.classList.remove('loading');
+        
+        // 显示提示信息
+        if (actualChartContainer) actualChartContainer.innerHTML = '<div class="info-message">请先选择一级部门以查看对应的二级部门数据</div>';
+        if (actualTableContainer) actualTableContainer.innerHTML = '';
+        return;
+    }
+    
+    // 请求数据 - 更新API路径以匹配后端路由
+    fetch(getApiUrl(`/api/hr/statistics/entry-year-by-subdept?primary_department=${encodeURIComponent(primaryDept)}`))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP错误状态码: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(result => {
+            // 隐藏加载状态
+            if (secondaryTabLoading) secondaryTabLoading.style.display = 'none';
+            if (secondaryTabContent) secondaryTabContent.classList.remove('loading');
+            
+            // 处理数据
+            const data = result.data || [];
+            
+            if (data.length === 0) {
+                // 无数据情况处理
+                if (actualChartContainer) actualChartContainer.innerHTML = '<div class="no-data">没有找到相关数据</div>';
+                if (actualTableContainer) actualTableContainer.innerHTML = '<div class="no-data">没有找到相关数据</div>';
+                return;
+            }
+            
+            // 渲染图表
+            if (actualChartContainer === chartContainer) {
+                renderSecondaryDeptEntryYearChart(data);
+            }
+            
+            // 渲染表格
+            if (actualTableContainer === tableContainer) {
+                renderSecondaryDeptTable(data);
+            }
+            
+            // 绑定导出按钮
+            const exportBtn = document.getElementById('export-secondary-dept');
+            if (exportBtn) {
+                exportBtn.onclick = function() {
+                    exportSecondaryDeptDataToExcel(data);
+                };
+            }
+        })
+        .catch(error => {
+            // 隐藏加载状态
+            if (secondaryTabLoading) secondaryTabLoading.style.display = 'none';
+            if (secondaryTabContent) secondaryTabContent.classList.remove('loading');
+            
+            // 显示错误
+            console.error('加载二级部门入职年份数据失败:', error);
+            
+            // 显示错误提示
+            if (secondaryTabError) {
+                secondaryTabError.style.display = 'block';
+                const errorElement = secondaryTabError.querySelector('.error-message') || secondaryTabError;
+                if (errorElement.textContent) {
+                    errorElement.textContent = '网络错误，请稍后重试';
+                }
+            } else if (actualChartContainer) {
+                actualChartContainer.innerHTML = `<div class="error-message">加载数据失败: ${error.message}</div>`;
+            }
+        });
+}
+
+// 渲染二级部门入职年份图表
+function renderSecondaryDeptEntryYearChart(data) {
+    // 准备数据
+    const deptNames = [];
+    const series = [];
+    
+    // 获取所有年份
+    const years = new Set();
+    data.forEach(dept => {
+        Object.keys(dept.years).forEach(year => years.add(parseInt(year)));
+    });
+    
+    // 对年份进行排序
+    const sortedYears = Array.from(years).sort();
+    
+    // 准备每个年份的系列数据
+    sortedYears.forEach(year => {
+        const yearData = [];
+        data.forEach(dept => {
+            yearData.push(dept.years[year] || 0);
+        });
+        
+        series.push({
+            name: `${year}年`,
+            type: 'bar',
+            stack: '入职',
+            data: yearData
+        });
+    });
+    
+    // 准备部门名称
+    data.forEach(dept => {
+        deptNames.push(dept.department);
+    });
+    
+    // 获取当前主题
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const textColor = isDarkMode ? '#eee' : '#333';
+    const gridLineColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    
+    // 图表配置
+    const chartOptions = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'shadow'
+            }
+        },
+        legend: {
+            data: sortedYears.map(year => `${year}年`),
+            textStyle: {
+                color: textColor
+            }
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            top: '15%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'category',
+            data: deptNames,
+            axisLine: {
+                lineStyle: {
+                    color: gridLineColor
+                }
+            },
+            axisLabel: {
+                color: textColor,
+                interval: 0,
+                rotate: 30
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: '人数',
+            axisLine: {
+                lineStyle: {
+                    color: gridLineColor
+                }
+            },
+            axisLabel: {
+                color: textColor
+            },
+            splitLine: {
+                lineStyle: {
+                    color: gridLineColor
+                }
+            }
+        },
+        series: series
+    };
+    
+    // 获取容器
+    const chartContainer = document.getElementById('secondary-dept-chart');
+    
+    // 销毁现有图表
+    if (secondaryDeptChart) {
+        secondaryDeptChart.dispose();
+    }
+    
+    // 创建新图表
+    secondaryDeptChart = echarts.init(chartContainer);
+    secondaryDeptChart.setOption(chartOptions);
+    
+    // 处理窗口大小变化
+    window.addEventListener('resize', function() {
+        if (secondaryDeptChart) {
+            secondaryDeptChart.resize();
+        }
+    });
+}
+
+// 渲染二级部门表格
+function renderSecondaryDeptTable(data) {
+    // 获取所有年份
+    const years = new Set();
+    data.forEach(dept => {
+        Object.keys(dept.years).forEach(year => years.add(parseInt(year)));
+    });
+    
+    // 对年份进行排序
+    const sortedYears = Array.from(years).sort();
+    
+    // 创建表头
+    let tableHtml = '<table class="detail-table"><thead><tr><th>二级部门</th>';
+    
+    sortedYears.forEach(year => {
+        tableHtml += `<th>${year}年</th>`;
+    });
+    
+    tableHtml += '<th>总计</th></tr></thead><tbody>';
+    
+    // 创建表格内容
+    data.forEach(dept => {
+        tableHtml += `<tr><td>${dept.department}</td>`;
+        
+        sortedYears.forEach(year => {
+            tableHtml += `<td>${dept.years[year] || 0}</td>`;
+        });
+        
+        tableHtml += `<td>${dept.total}</td></tr>`;
+    });
+    
+    tableHtml += '</tbody></table>';
+    
+    // 更新表格容器
+    document.getElementById('secondary-dept-table').innerHTML = tableHtml;
+}
+
+// 导出二级部门数据到Excel
+function exportSecondaryDeptDataToExcel(data) {
+    // 获取所有年份
+    const years = new Set();
+    data.forEach(dept => {
+        Object.keys(dept.years).forEach(year => years.add(parseInt(year)));
+    });
+    
+    // 对年份进行排序
+    const sortedYears = Array.from(years).sort();
+    
+    // 创建工作表数据
+    const worksheetData = [];
+    
+    // 添加表头
+    const header = ['二级部门'];
+    sortedYears.forEach(year => header.push(`${year}年`));
+    header.push('总计');
+    worksheetData.push(header);
+    
+    // 添加数据行
+    data.forEach(dept => {
+        const row = [dept.department];
+        
+        sortedYears.forEach(year => {
+            row.push(dept.years[year] || 0);
+        });
+        
+        row.push(dept.total);
+        worksheetData.push(row);
+    });
+    
+    // 获取当前选择的主部门
+    const primaryDeptSelect = document.getElementById('primary-dept-filter');
+    const primaryDept = primaryDeptSelect ? primaryDeptSelect.value : '全部';
+    
+    // 获取当前日期
+    const today = new Date();
+    const dateString = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+    
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, '二级部门入职年份分布');
+    
+    // 导出Excel文件
+    XLSX.writeFile(wb, `二级部门入职年份分布_${primaryDept}_${dateString}.xlsx`);
+}
+
+// 刷新图表函数
+function refreshCharts() {
+    // 如果有打开的模态框，根据当前活动的标签重新加载数据
+    const modal = document.getElementById('entry-year-tabs-modal');
+    if (modal && modal.classList.contains('active')) {
+        const activeTab = modal.querySelector('.tab.active');
+        if (activeTab) {
+            const targetId = activeTab.getAttribute('data-target');
+            if (targetId === 'year-tab-content') {
+                loadEntryYearData();
+            } else if (targetId === 'department-tab-content') {
+                loadDepartmentDimensionData();
+            } else if (targetId === 'secondary-tab-content') {
+                loadSecondaryDeptEntryYearData();
+            }
+        }
+    }
+}
+
+// 添加loadDepartmentDimensionData函数
+function loadDepartmentDimensionData() {
+    // 获取当前选择的部门筛选条件
+    const primaryDept = currentPrimaryDept;
+    const secondaryDept = currentSecondaryDept;
+    
+    console.log('加载部门维度数据:', primaryDept, secondaryDept);
+    
+    // 显示加载状态
+    document.getElementById('department-tab').innerHTML = `
+        <div class="tab-placeholder">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>正在加载部门维度数据...</p>
+        </div>
+    `;
+    
+    // 构建查询参数
+    const queryParams = new URLSearchParams();
+    if (primaryDept !== 'all') {
+        queryParams.append('primary_department', primaryDept);
+    }
+    if (secondaryDept !== 'all') {
+        queryParams.append('secondary_department', secondaryDept);
+    }
+    
+    // 调用API获取数据
+    fetch(getApiUrl(`/api/hr/statistics/entry-year-by-dept?${queryParams.toString()}`))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP错误状态码: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // 准备表格数据
+            renderDeptDimensionTable(data, primaryDept, secondaryDept);
+        })
+        .catch(error => {
+            console.error('获取部门维度数据失败:', error);
+            document.getElementById('department-tab').innerHTML = `
+                <div class="tab-placeholder">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>加载数据失败</p>
+                    <button class="retry-btn">重试</button>
+                </div>
+            `;
+            
+            // 添加重试按钮事件
+            document.querySelector('#department-tab .retry-btn').onclick = function() {
+                loadDepartmentDimensionData();
+            };
+        });
+}
+
+// 按二级部门加载入职年份数据
+function loadEntryYearBySubDept(primaryDept, secondaryDept = 'all') {
+    if (!primaryDept || primaryDept === 'all') {
+        console.error('加载二级部门入职数据需要指定一级部门');
+        return;
+    }
+    
+    // 显示加载状态
+    const modalContent = document.querySelector('#tabs-modal .tab-content[data-tab="subdept"]');
+    const loadingIndicator = modalContent.querySelector('.loading-indicator');
+    const dataContainer = modalContent.querySelector('.data-container');
+    
+    loadingIndicator.style.display = 'flex';
+    dataContainer.innerHTML = '';
+    
+    // 构建查询参数
+    const queryParams = new URLSearchParams();
+    queryParams.append('primary_dept', primaryDept);
+    queryParams.append('start_year', '2020'); // 默认从2020年开始统计
+    
+    if (secondaryDept !== 'all') {
+        queryParams.append('secondary_department', secondaryDept);
+    }
+    
+    // 调用API获取数据
+    fetch(getApiUrl(`/api/hr/statistics/entry-year-by-subdept?${queryParams.toString()}`))
+        .then(response => response.json())
+        .then(data => {
+            // 隐藏加载指示器
+            loadingIndicator.style.display = 'none';
+            
+            // 渲染二级部门数据表格
+            renderSubDeptTable(data, dataContainer);
+        })
+        .catch(error => {
+            console.error('获取二级部门入职数据失败:', error);
+            loadingIndicator.style.display = 'none';
+            dataContainer.innerHTML = '<div class="error-message">加载数据失败，请重试</div>';
+        });
+}
+
+// 渲染二级部门入职数据表格
+function renderSubDeptTable(data, container) {
+    if (!data.data || data.data.length === 0) {
+        container.innerHTML = '<div class="no-data-message">没有找到匹配的数据</div>';
+        return;
+    }
+    
+    // 创建表格
+    const table = document.createElement('table');
+    table.className = 'detail-table';
+    
+    // 创建表头
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>二级部门</th>
+            <th>员工数量</th>
+            <th>百分比</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // 创建表体
+    const tbody = document.createElement('tbody');
+    data.data.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.department}</td>
+            <td>${item.count}人</td>
+            <td>${item.percentage}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    
+    // 添加表格到容器
+    container.innerHTML = '';
+    
+    // 添加标题和总计信息
+    const header = document.createElement('div');
+    header.className = 'table-header';
+    header.innerHTML = `
+        <h3>${data.primary_dept}部门(${data.start_year}年至今)入职统计</h3>
+        <div class="total-info">总计: ${data.total_count}人</div>
+    `;
+    
+    container.appendChild(header);
+    container.appendChild(table);
+    
+    // 添加导出按钮
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'export-btn';
+    exportBtn.innerHTML = '导出Excel';
+    exportBtn.addEventListener('click', () => exportSubDeptDataToExcel(data));
+    container.appendChild(exportBtn);
+}
+
+// 导出二级部门数据到Excel
+function exportSubDeptDataToExcel(data) {
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    
+    // 准备数据
+    const exportData = data.data.map(item => {
+        return {
+            '二级部门': item.department,
+            '员工数量': item.count,
+            '百分比': `${item.percentage}%`
+        };
+    });
+    
+    // 创建工作表
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // 设置列宽
+    const colWidths = [
+        { wch: 20 }, // 二级部门
+        { wch: 10 }, // 员工数量
+        { wch: 10 }  // 百分比
+    ];
+    ws['!cols'] = colWidths;
+    
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, `${data.primary_dept}部门入职统计`);
+    
+    // 导出文件
+    XLSX.writeFile(wb, `${data.primary_dept}部门入职统计_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// 添加调试函数，用于验证二级部门数据
+function testSecondaryDeptData() {
+    // 测试几个不同的一级部门
+    const primaryDepts = ['技术中心', '销售部', '市场部', 'all'];
+    
+    primaryDepts.forEach(dept => {
+        console.log(`测试一级部门[${dept}]的二级部门数据...`);
+        
+        // 构建URL
+        const url = getApiUrl(`/api/hr/departments/secondary?primary=${encodeURIComponent(dept)}`);
+        
+        // 发送请求
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP错误状态码: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`一级部门[${dept}]的二级部门数据:`, data);
+            })
+            .catch(error => {
+                console.error(`获取一级部门[${dept}]的二级部门数据失败:`, error);
+            });
+    });
 } 

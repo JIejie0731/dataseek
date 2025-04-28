@@ -11,8 +11,8 @@
     
     <!-- 全局API基础URL配置 -->
     <script>
-        // 配置API基础URL - Vercel部署环境
-        const API_BASE_URL = '';
+        // 配置API基础URL - 本地开发环境
+        const API_BASE_URL = 'http://localhost:3000';
         
         // 构建API URL的辅助函数
         function getApiUrl(path) {
@@ -20,8 +20,13 @@
             if (!path.startsWith('/')) {
                 path = '/' + path;
             }
-            // API路径已经包含/api前缀
-            return `${API_BASE_URL}/api${path}`;
+            
+            // 检查路径是否已经包含/api前缀
+            if (path.startsWith('/api/')) {
+                return `${API_BASE_URL}${path}`;
+            } else {
+                return `${API_BASE_URL}/api${path}`;
+            }
         }
     </script>
     
@@ -1190,6 +1195,20 @@
         .hr-card.expanded .card-expand-btn i {
             color: white;
         }
+        
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .loading-spinner-small {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
@@ -1254,17 +1273,21 @@
             <!-- 筛选器 -->
             <div class="filter-bar">
                 <div class="filter-group">
-                    <select class="filter-select" id="department-level-1">
-                        <option value="all">一级部门</option>
-                        <!-- 选项将通过API获取后动态填充 -->
+                    <select id="primary-department-select" class="filter-select">
+                        <option value="all">全部</option>
+                        <!-- 一级部门选项将通过 JavaScript 动态添加 -->
                     </select>
                 </div>
-                
                 <div class="filter-group">
-                    <select class="filter-select" id="department-level-2">
-                        <option value="all">二级部门</option>
-                        <!-- 选项将通过API获取后动态填充 -->
+                    <div class="select-wrapper">
+                        <select id="secondary-department-select" class="filter-select">
+                            <option value="all">全部</option>
+                            <!-- 二级部门选项将通过 JavaScript 动态添加 -->
                     </select>
+                        <div id="secondary-department-loading" class="loading-spinner-small" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -1447,6 +1470,99 @@
                     <i class="fas fa-user-tie"></i>
                     <p>岗位维度数据分析</p>
                     <p>暂无数据</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 选项卡导航 -->
+    <div class="tabs-nav">
+        <div class="tab active" data-tab="entry-year">入职年份分布</div>
+        <div class="tab" data-tab="department">部门分布</div>
+        <div class="tab" data-tab="subdept">二级部门分布</div>
+        <button class="close-modal">×</button>
+    </div>
+    
+    <!-- 选项卡内容 -->
+    <div class="tabs-content">
+        <!-- 入职年份分布选项卡 -->
+        <div class="tab-content active" data-tab="entry-year">
+            <div class="loading-indicator">
+                <div class="loader"></div>
+                <div>加载中...</div>
+            </div>
+            <div class="chart-container"></div>
+        </div>
+        
+        <!-- 部门分布选项卡 -->
+        <div class="tab-content" data-tab="department">
+            <div class="loading-indicator">
+                <div class="loader"></div>
+                <div>加载中...</div>
+            </div>
+            <div class="data-container"></div>
+        </div>
+        
+        <!-- 二级部门分布选项卡 -->
+        <div class="tab-content" data-tab="subdept">
+            <div class="loading-indicator">
+                <div class="loader"></div>
+                <div>加载中...</div>
+            </div>
+            <div class="data-container"></div>
+        </div>
+    </div>
+
+    <!-- 卡片1展开的模态框 -->
+    <div id="card-1-modal" class="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>入职年份分布详情</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 标签导航 -->
+                <div class="tabs-nav">
+                    <button class="tab-link active" data-target="#entry-year-tab">年份维度</button>
+                    <button class="tab-link" data-target="#department-tab">部门维度</button>
+                    <button class="tab-link" data-target="#secondary-dept-tab">二级部门维度</button>
+                </div>
+                
+                <!-- 标签内容 -->
+                <div class="tab-content active" id="entry-year-tab">
+                    <!-- 年份标签的内容 -->
+                    <div id="entry-year-tab-loading" class="loading-container">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div id="entry-year-tab-content">
+                        <div class="chart-container" id="entry-year-chart"></div>
+                        <div class="table-container" id="entry-year-table"></div>
+                        <button class="export-button" id="export-entry-year">导出Excel</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="department-tab">
+                    <!-- 部门标签的内容 -->
+                    <div id="department-tab-loading" class="loading-container">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div id="department-tab-content">
+                        <div class="chart-container" id="department-chart"></div>
+                        <div class="table-container" id="department-table"></div>
+                        <button class="export-button" id="export-department">导出Excel</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="secondary-dept-tab">
+                    <!-- 二级部门标签的内容 -->
+                    <div id="secondary-dept-tab-loading" class="loading-container">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div id="secondary-dept-tab-content">
+                        <div class="chart-container" id="secondary-dept-chart"></div>
+                        <div class="table-container" id="secondary-dept-table"></div>
+                        <button class="export-button" id="export-secondary-dept">导出Excel</button>
+                    </div>
                 </div>
             </div>
         </div>
