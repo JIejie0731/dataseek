@@ -1,7 +1,6 @@
 import sys
 import os
 from datetime import datetime
-from sqlalchemy import text
 
 # 确保能够导入项目模块
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,15 +17,8 @@ def init_postgres_db():
     print(f"[{datetime.now()}] 开始初始化PostgreSQL数据库...")
     
     with app.app_context():
-        # 获取数据库连接并使用直接SQL删除表
-        conn = db.engine.connect()
-        trans = conn.begin()
-        
-        print(f"[{datetime.now()}] 正在删除旧表...")
-        conn.execute(text("DROP TABLE IF EXISTS employees CASCADE;"))
-        conn.execute(text("DROP TABLE IF EXISTS alembic_version CASCADE;"))
-        trans.commit()
-        
+        # 删除现有表（如果存在）
+        db.drop_all()
         print(f"[{datetime.now()}] 已清除现有表")
         
         # 创建所有表
@@ -34,8 +26,8 @@ def init_postgres_db():
         print(f"[{datetime.now()}] 已创建表结构")
         
         # 检查表是否创建成功
-        engine_tables = db.inspect(db.engine).get_table_names()
-        print(f"[{datetime.now()}] 已创建的表: {', '.join(engine_tables)}")
+        tables = db.engine.table_names()
+        print(f"[{datetime.now()}] 已创建的表: {', '.join(tables)}")
         
         # 生成测试数据
         try:

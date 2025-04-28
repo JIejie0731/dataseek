@@ -1,10 +1,10 @@
 # 人力资源数据分析系统
 
-这是一个基于Flask和现代前端技术构建的人力资源数据分析系统，旨在提供直观、易用的HR数据可视化和管理功能。
+这是一个基于Node.js和现代前端技术构建的人力资源数据分析系统，旨在提供直观、易用的HR数据可视化和管理功能。
 
 ## 项目特点
 
-- **清晰的前后端分离架构**：后端使用Flask提供API服务，前端采用原生HTML/CSS/JS实现
+- **清晰的前后端分离架构**：后端使用Express提供API服务，前端采用原生HTML/CSS/JS实现
 - **响应式数据展示**：使用ECharts实现丰富的数据可视化图表
 - **灵活的筛选和分析功能**：支持多维度筛选和深度数据钻取
 - **明暗主题切换**：支持浅色/深色主题切换，提供舒适的视觉体验
@@ -26,26 +26,23 @@
 - SheetJS (xlsx) Excel导出
 
 ### 后端
-- Python 3
-- Flask 框架
-- SQLAlchemy ORM
-- SQLite 数据库
+- Node.js
+- Express 框架
+- 支持PostgreSQL数据库连接
 
 ## 快速开始
 
 ### 项目结构
 ```
 项目根目录
-├── backend/              # 后端代码
-│   ├── app.py            # 主应用文件
-│   ├── config.py         # 配置文件
-│   ├── controllers/      # API控制器
-│   ├── models/           # 数据模型
-│   ├── database/         # 数据库相关
-│   └── services/         # 业务逻辑服务
+├── api/                  # Node.js后端代码
+│   ├── index.js          # 主应用文件
+│   ├── package.json      # 依赖配置
+│   └── vercel.json       # Vercel部署配置
 └── frontend/             # 前端代码
     ├── assets/           # 静态资源
     ├── hr-dashboard.html # HR数据大屏
+    ├── hr-dashboard-fixed.js # HR大屏JavaScript代码
     ├── login.html        # 登录页面
     ├── index.html        # 首页
     └── styles.css        # 全局样式
@@ -54,31 +51,18 @@
 ### 安装依赖
 
 ```bash
-# 进入后端目录
-cd backend
+# 进入API目录
+cd api
 
-# 安装Python依赖
-pip install -r requirements.txt
-```
-
-### 初始化数据库
-
-```bash
-# 在Python交互环境中
-python
->>> from database import init_db
->>> init_db()
->>> exit()
-
-# 或使用脚本初始化测试数据
-python database/init_data.py
+# 安装Node.js依赖
+npm install
 ```
 
 ### 启动服务
 
 ```bash
-# 在backend目录中
-python app.py
+# 在api目录中
+npm start
 ```
 
 访问 http://localhost:3000/ 开始使用应用。
